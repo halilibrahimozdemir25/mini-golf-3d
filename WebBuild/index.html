@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MiniGolf 3D">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Velocity Mini-Golf 3D (Mobile Edition)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #6bb4de;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      touch-action: none;
+    }
+    /* Top HUD */
+    #hud {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 420px;
+      background: rgba(10, 25, 15, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 24px;
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.15);
+      z-index: 10;
+    }
+    #hole-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #ffde43;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #par-badge {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ccc;
+    }
+    #stroke-badge {
+      font-size: 14px;
+      font-weight: 800;
+      color: #4df373;
+    }
+    /* Slingshot Power Badge */
+    #power-badge {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(12, 16, 20, 0.88);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 6px 18px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      display: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      z-index: 10;
+    }
+    /* Instruction Hint */
+    #hint {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(8, 14, 10, 0.72);
+      border-radius: 16px;
+      padding: 8px 16px;
+      color: #e5f5eb;
+      font-size: 13px;
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 10;
+      text-align: center;
+      width: 86%;
+      max-width: 320px;
+    }
+    /* Modal */
+    #modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-card {
+      background: rgba(14, 28, 18, 0.95);
+      border: 2px solid rgba(255, 222, 67, 0.4);
+      border-radius: 28px;
+      padding: 30px 24px;
+      width: 85%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .modal-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: #ffde43;
+      margin-bottom: 8px;
+    }
+    .modal-stars {
+      font-size: 34px;
+      margin: 10px 0;
+      color: #ffd214;
+    }
+    .modal-score {
+      font-size: 16px;
+      color: #fff;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .modal-btn {
+      background: linear-gradient(135deg, #1fc953, #169e3f);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 800;
+      border: none;
+      border-radius: 18px;
+      padding: 14px 28px;
+      width: 100%;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(31, 201, 83, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="hud">
+    <div id="hole-name">1. Çam Vadisi</div>
+    <div id="par-badge">PAR: 2</div>
+    <div id="stroke-badge">VURUŞ: 0</div>
+  </div>
+
+  <div id="power-badge">%0 GÜÇ</div>
+
+  <div id="hint">🎯 Vuruş: Topa dokun ve geri çek | 🔄 Kamera: Boşlukta kaydır</div>
+
+  <div id="modal">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">TEBRİKLER! ⛳</div>
+      <div class="modal-stars" id="modal-stars">⭐⭐⭐</div>
+      <div class="modal-score" id="modal-score">1 Vuruşta Deliğe Girdi! (Par 2)</div>
+      <button class="modal-btn" id="next-btn" onclick="nextHole()">SONRAKİ DELİK ➡️</button>
+    </div>
+  </div>
+
+  <div id="gameover-modal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); justify-content:center; align-items:center; z-index:100;">
+    <div class="modal-card" style="border: 2px solid rgba(255, 60, 60, 0.7); box-shadow: 0 16px 40px rgba(255, 30, 30, 0.3);">
+      <div class="modal-title" style="color: #ff3b30;">PARKUR DIŞI! ⚠️</div>
+      <div style="font-size: 42px; margin: 12px 0;">💥</div>
+      <div class="modal-score" style="color: #ffcccc;">Top pist sınırlarının dışına çıktı!</div>
+      <button class="modal-btn" style="background: linear-gradient(135deg, #ff3b30, #c4180f); box-shadow: 0 6px 18px rgba(255, 59, 48, 0.4);" onclick="retryHole()">TEKRAR DENE 🔄</button>
+    </div>
+  </div>
+
+  <input type="checkbox" id="ios-haptic-switch" style="position:fixed;top:-100px;left:-100px;opacity:0.01;pointer-events:none;" switch>
+  <label id="ios-haptic-label" for="ios-haptic-switch" style="position:fixed;top:-100px;left:-100px;opacity:0.01;pointer-events:none;"></label>
+
+  <script>
+    // --- iOS Safari & Mobile Compatible Web Audio Engine ---
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new AudioCtx();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        // iOS WebKit Audio Unlock: Boş sessiz buffer çalarak donanım ses kanalını anında aç
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start(0);
+      } catch (err) {
+        console.warn('Audio init warning:', err);
+      }
+    }
+
+    // Mobilde ilk dokunmada (touchstart, touchend, pointerdown, click) ses kilidini kaldır
+    const unlockEvents = ['touchstart', 'touchend', 'pointerdown', 'mousedown', 'click'];
+    function unlockOnFirstTouch() {
+      initAudio();
+      unlockEvents.forEach(evt => window.removeEventListener(evt, unlockOnFirstTouch, true));
+    }
+    unlockEvents.forEach(evt => window.addEventListener(evt, unlockOnFirstTouch, { capture: true, passive: false }));
+
+    function ensureAudioReady() {
+      if (!audioCtx) initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // --- Mobile Haptic Feedback (Titreşim) Motoru ---
+    function triggerHaptic(type = 'light') {
+      // 1. Standart HTML5 Vibration API (Android Chrome, Edge vb.)
+      try {
+        if (navigator && typeof navigator.vibrate === 'function') {
+          if (type === 'light') navigator.vibrate(15);
+          else if (type === 'medium') navigator.vibrate(28);
+          else if (type === 'hole') navigator.vibrate([25, 45, 35, 45, 60]);
+        }
+      } catch (err) {}
+
+      // 2. iOS Safari Taptic Engine Workaround (Native Switch Hack)
+      try {
+        const hapticLabel = document.getElementById('ios-haptic-label');
+        if (hapticLabel) {
+          hapticLabel.click();
+        }
+      } catch (err) {}
+    }
+
+    function playPutt(p) {
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(160 + p * 120, t);
+      osc.frequency.exponentialRampToValueAtTime(30, t + 0.12);
+      gain.gain.setValueAtTime(0.5 + p * 0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    }
+
+    function playBounce() {
+      triggerHaptic('light');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(280, t);
+      osc.frequency.exponentialRampToValueAtTime(80, t + 0.08);
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.08);
+    }
+
+    function playBumper() {
+      triggerHaptic('medium');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(784, t);
+      osc.frequency.exponentialRampToValueAtTime(392, t + 0.25);
+      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.25);
+    }
+
+    function playHoleIn() {
+      triggerHaptic('hole');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const notes = [523, 659, 784, 1046];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const startT = t + idx * 0.09;
+        osc.frequency.setValueAtTime(freq, startT);
+        gain.gain.setValueAtTime(0.35, startT);
+        gain.gain.exponentialRampToValueAtTime(0.01, startT + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startT);
+        osc.stop(startT + 0.28);
+      });
+    }
+
+    // --- Three.js Setup ---
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x6bb4de);
+    scene.fog = new THREE.FogExp2(0x6bb4de, 0.018);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.35, 50);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    container.appendChild(renderer.domElement);
+
+    // Lights (Zengin Kontrast ve Canlı Zemin Aydınlatması)
+    const ambientLight = new THREE.AmbientLight(0xd0ebd5, 0.50);
+    scene.add(ambientLight);
+    const sunLight = new THREE.DirectionalLight(0xfffaea, 1.10);
+    sunLight.position.set(14, 25, 10);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 60;
+    sunLight.shadow.camera.left = -16;
+    sunLight.shadow.camera.right = 16;
+    sunLight.shadow.camera.top = 18;
+    sunLight.shadow.camera.bottom = -18;
+    sunLight.shadow.bias = 0.00005;
+    sunLight.shadow.normalBias = 0.02;
+    scene.add(sunLight);
+
+    // Background Surrounding Ground (Deep dark forest rough grass)
+    const bgGeo = new THREE.PlaneGeometry(140, 140);
+    const bgMat = new THREE.MeshStandardMaterial({ color: 0x0e3817, roughness: 0.95, metalness: 0.02 });
+    const bgPlane = new THREE.Mesh(bgGeo, bgMat);
+    bgPlane.rotation.x = -Math.PI / 2;
+    bgPlane.position.y = -0.15;
+    bgPlane.receiveShadow = true;
+    scene.add(bgPlane);
+
+    // --- Procedural High-Contrast Championship Golf Turf (Net Doku, Canlı Çim, Sıfır Dalgalanma) ---
+    function createGolfGrassTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // 1. Zengin, canlı şampiyona yeşili taban (#158c38)
+      ctx.fillStyle = '#158c38';
+      ctx.fillRect(0, 0, 1024, 1024);
+
+      // 2. Klasik Turnuva Çim Biçme Şeritleri (Alternating Mower Striping Bands - Golf Battle / PGA kalitesi)
+      // Çim biçme yönü sayesinde doğal zemin derinliği oluşur
+      const stripeWidth = 64;
+      for (let i = 0; i < 1024; i += stripeWidth * 2) {
+        ctx.fillStyle = 'rgba(12, 92, 33, 0.16)';
+        ctx.fillRect(0, i, 1024, stripeWidth);
+        ctx.fillStyle = 'rgba(40, 190, 80, 0.14)';
+        ctx.fillRect(0, i + stripeWidth, 1024, stripeWidth);
+      }
+
+      // 3. Doğal Organik Çim Öbekleri & Zemin Gölgeleri (Bulanıklık yaratmayan yumuşak tonlama)
+      for (let p = 0; p < 50; p++) {
+        const px = Math.random() * 1024;
+        const py = Math.random() * 1024;
+        const pr = 40 + Math.random() * 70;
+        const grad = ctx.createRadialGradient(px, py, 6, px, py, pr);
+        if (Math.random() > 0.5) {
+          grad.addColorStop(0, 'rgba(8, 68, 24, 0.28)');
+          grad.addColorStop(1, 'rgba(8, 68, 24, 0)');
+        } else {
+          grad.addColorStop(0, 'rgba(45, 205, 85, 0.24)');
+          grad.addColorStop(1, 'rgba(45, 205, 85, 0)');
+        }
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Belirgin, Dokulu ve Canlı Çim Yaprakları (Organik Vektörel Çim Tutamları - Asla bulanık değil!)
+      // Tek piksellik gürültü yerine 2-4 piksel kalınlığında yumuşak kavisli çim yaprakları
+      // Bu sayede kamera dönerken zerre titreme / Moiré yapmaz, uzaktan da yakından da net ve dokuludur!
+      ctx.lineCap = 'round';
+      const bladeColors = [
+        'rgba(8, 70, 25, 0.55)',   // Derin gölge lifi
+        'rgba(18, 125, 45, 0.65)', // Fairway gövde yeşili
+        'rgba(35, 185, 75, 0.70)', // Canlı yeşil yaprak
+        'rgba(55, 220, 100, 0.60)' // Güneş vuran açık yeşil uçlar
+      ];
+
+      // 1800 adet özenle dağıtılmış doğal çim tutamı
+      for (let i = 0; i < 1800; i++) {
+        const bx = Math.random() * 1024;
+        const by = Math.random() * 1024;
+        const bladeHeight = 9 + Math.random() * 14;
+        const curve = (Math.random() - 0.5) * 8;
+        const col = bladeColors[Math.floor(Math.random() * bladeColors.length)];
+
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.8 + Math.random() * 1.6;
+
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + curve * 0.5, by - bladeHeight * 0.5, bx + curve, by - bladeHeight);
+        ctx.stroke();
+
+        // Çim yaprağı ucunda parlak güneş ışıltısı
+        if (Math.random() > 0.6) {
+          ctx.fillStyle = 'rgba(75, 240, 120, 0.55)';
+          ctx.beginPath();
+          ctx.arc(bx + curve, by - bladeHeight, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 5. Küçük Doğal Papatya & Yonca Detayları (Canlı turnuva sahası hissi)
+      for (let f = 0; f < 35; f++) {
+        const fx = Math.random() * 1024;
+        const fy = Math.random() * 1024;
+        ctx.fillStyle = 'rgba(255, 255, 230, 0.75)';
+        ctx.beginPath();
+        ctx.arc(fx, fy, 2.0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.85)';
+        ctx.beginPath();
+        ctx.arc(fx, fy, 1.0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    // --- Procedural High-End Cedar Wood Plank Texture with Rich Grain & Knots ---
+    function createWoodTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // 1. Zengin sıcak sedir / meşe ahşap temel tonu (#884c24)
+      ctx.fillStyle = '#884c24';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // 2. Belirgin ahşap damarları ve kalas dalgaları (Rich wavy grain contours)
+      for (let y = 0; y < 256; y++) {
+        // Doğal ahşap büyüme halkası eğrisi
+        const wave1 = Math.sin(y * 0.08) * 18;
+        const wave2 = Math.cos(y * 0.035 + 1.2) * 25;
+        const wave = wave1 + wave2;
+
+        const isDarkBand = (Math.floor((y + wave * 0.4) / 10) % 2 === 0);
+        const alpha = 0.14 + Math.sin(y * 0.15) * 0.08;
+
+        ctx.fillStyle = isDarkBand ? `rgba(45, 18, 6, ${alpha})` : `rgba(185, 110, 55, ${alpha * 0.9})`;
+        ctx.fillRect(0, y, 512, 1);
+      }
+
+      // 3. Kalas Seviyeleri (3 Adet Belirgin Yatay Ahşap Tahta & Derin Pah Gölgeleri)
+      const plankY = [0, 85, 170, 255];
+      plankY.forEach(py => {
+        // Derin gölge çizgisi
+        ctx.fillStyle = 'rgba(25, 10, 4, 0.75)';
+        ctx.fillRect(0, py - 3, 512, 5);
+        // Üst açık pah yansıması
+        ctx.fillStyle = 'rgba(235, 155, 90, 0.45)';
+        ctx.fillRect(0, py + 2, 512, 3);
+      });
+
+      // 4. Doğal Ahşap Budakları (Organic Wood Knots)
+      function drawWoodKnot(kx, ky, r) {
+        // Budak merkez çekirdeği
+        ctx.fillStyle = '#321406';
+        ctx.beginPath();
+        ctx.ellipse(kx, ky, r * 0.45, r * 0.35, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Budak etrafındaki iç içe halkalar
+        for (let rad = r * 0.6; rad <= r * 2.2; rad += 3.5) {
+          ctx.strokeStyle = (Math.floor(rad) % 7 === 0) ? 'rgba(50, 20, 8, 0.38)' : 'rgba(190, 115, 60, 0.25)';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.ellipse(kx, ky, rad, rad * 0.65, 0.2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      drawWoodKnot(135, 42, 14);
+      drawWoodKnot(370, 128, 16);
+      drawWoodKnot(225, 212, 13);
+
+      // 5. Boyuna İnce Ahşap Lifleri ve Gözenek Çizgileri
+      ctx.lineWidth = 1.0;
+      for (let i = 0; i < 400; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 256;
+        const len = 30 + Math.random() * 90;
+        const isDark = Math.random() > 0.45;
+        ctx.strokeStyle = isDark ? 'rgba(38, 15, 5, 0.22)' : 'rgba(200, 125, 65, 0.18)';
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + len, y + (Math.random() - 0.5) * 2.0);
+        ctx.stroke();
+      }
+
+      // 6. Ahşap Birleşim Yerlerinde Çivi/Vida Başlıkları (Metalik Bağlantılar)
+      function drawFastener(fx, fy) {
+        ctx.fillStyle = 'rgba(30, 20, 15, 0.7)';
+        ctx.beginPath();
+        ctx.arc(fx, fy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(210, 190, 170, 0.4)';
+        ctx.beginPath();
+        ctx.arc(fx - 1, fy - 1, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      [42, 128, 212].forEach(fy => {
+        drawFastener(24, fy);
+        drawFastener(488, fy);
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    // --- 3D Kupa İçi Duvar Dokusu (Beyaz Turnuva Astarı ve Derinlik Gradyanı) ---
+    function createCupWallTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Üstten alta derinlik gradyanı:
+      // Üst %18: Beyaz turnuva kupa plastik halkası
+      // Orta: Gölgeli kupa içi derinleşmesi
+      // Dip: Koyu çukur tabanı
+      const grad = ctx.createLinearGradient(0, 0, 0, 256);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.16, '#f2f2f2');
+      grad.addColorStop(0.24, '#9e9e9e');
+      grad.addColorStop(0.55, '#2c3035');
+      grad.addColorStop(1, '#0e1012');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 256);
+
+      // İnce dikey kupa iç kaburga çizgileri
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1;
+      for (let x = 8; x < 128; x += 16) {
+        ctx.beginPath();
+        ctx.moveTo(x, 50);
+        ctx.lineTo(x, 256);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    }
+
+    function createDropShadowTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.75)');
+      grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.35)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 128);
+
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function createBoosterTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#061c2b';
+      ctx.fillRect(0, 0, 128, 256);
+
+      ctx.strokeStyle = '#00f6ff';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      for (let y = 30; y < 256; y += 60) {
+        ctx.beginPath();
+        ctx.moveTo(25, y + 25);
+        ctx.lineTo(64, y);
+        ctx.lineTo(103, y + 25);
+        ctx.stroke();
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    // Shared Materials (Turnuva Dokulu Canlı Zemin & Sedir Ahşap Duvarlar)
+    const grassTex = createGolfGrassTexture();
+    grassTex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+    const grassMat = new THREE.MeshStandardMaterial({
+      map: grassTex,
+      roughness: 0.85,
+      metalness: 0.0
+    });
+
+    const woodTex = createWoodTexture();
+    woodTex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+    const woodMat = new THREE.MeshStandardMaterial({
+      map: woodTex,
+      roughness: 0.52,
+      metalness: 0.04
+    });
+    const wallMat = woodMat;
+    const sandMat = new THREE.MeshStandardMaterial({ color: 0xedd68a, roughness: 0.95, metalness: 0.0 });
+    const boosterTex = createBoosterTexture();
+    const boosterMat = new THREE.MeshBasicMaterial({ map: boosterTex });
+    const bumperMat = new THREE.MeshStandardMaterial({ color: 0xff2e6d, roughness: 0.15, metalness: 0.3 });
+    const treeMat = new THREE.MeshStandardMaterial({ color: 0x1f7332, roughness: 0.7 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a391c, roughness: 0.8 });
+
+    // Golf Ball
+    const ballRadius = 0.12;
+    const ballGeo = new THREE.SphereGeometry(ballRadius, 32, 32);
+    const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.18, metalness: 0.08 });
+    const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+    ballMesh.castShadow = true;
+    scene.add(ballMesh);
+
+    // Contact drop-shadow decal under ball
+    const shadowGeo = new THREE.PlaneGeometry(0.28, 0.28);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: createDropShadowTexture(),
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false
+    });
+    const ballShadow = new THREE.Mesh(shadowGeo, shadowMat);
+    ballShadow.rotation.x = -Math.PI / 2;
+    scene.add(ballShadow);
+
+    // --- Professional 3D Dynamic Arrow Indicator System ---
+    const aim3DGroup = new THREE.Group();
+    scene.add(aim3DGroup);
+
+    function createChevronShape() {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0.22);
+      s.lineTo(0.15, 0.0);
+      s.lineTo(0.09, -0.05);
+      s.lineTo(0, 0.07);
+      s.lineTo(-0.09, -0.05);
+      s.lineTo(-0.15, 0.0);
+      s.closePath();
+      return s;
+    }
+
+    function createArrowheadShape() {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0.36);
+      s.lineTo(0.22, 0.0);
+      s.lineTo(0.08, 0.0);
+      s.lineTo(0.08, -0.08);
+      s.lineTo(-0.08, -0.08);
+      s.lineTo(-0.08, 0.0);
+      s.lineTo(-0.22, 0.0);
+      s.closePath();
+      return s;
+    }
+
+    const chevronGeo = new THREE.ExtrudeGeometry(createChevronShape(), {
+      depth: 0.02,
+      bevelEnabled: true,
+      bevelThickness: 0.005,
+      bevelSize: 0.005,
+      bevelSegments: 2
+    });
+    chevronGeo.rotateX(Math.PI / 2); // Topun gidiş yönüne (hedefe doğru) baksın!
+
+    const arrowheadGeo = new THREE.ExtrudeGeometry(createArrowheadShape(), {
+      depth: 0.025,
+      bevelEnabled: true,
+      bevelThickness: 0.007,
+      bevelSize: 0.007,
+      bevelSegments: 2
+    });
+    arrowheadGeo.rotateX(Math.PI / 2); // Topun gidiş yönüne baksın!
+
+    const aimChevrons = [];
+    const maxChevrons = 9;
+    for (let i = 0; i < maxChevrons; i++) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x00ff77,
+        roughness: 0.2,
+        metalness: 0.1,
+        emissive: 0x00dd55,
+        emissiveIntensity: 0.6
+      });
+      const mesh = new THREE.Mesh(chevronGeo, mat);
+      mesh.visible = false;
+      aim3DGroup.add(mesh);
+      aimChevrons.push(mesh);
+    }
+
+    const arrowheadMat = new THREE.MeshStandardMaterial({
+      color: 0x00ff77,
+      roughness: 0.2,
+      metalness: 0.1,
+      emissive: 0x00dd55,
+      emissiveIntensity: 0.7
+    });
+    const arrowheadMesh = new THREE.Mesh(arrowheadGeo, arrowheadMat);
+    arrowheadMesh.visible = false;
+    aim3DGroup.add(arrowheadMesh);
+
+    // Slingshot Pull Band
+    const bandGeo = new THREE.BufferGeometry();
+    const bandPositions = new Float32Array(9);
+    bandGeo.setAttribute('position', new THREE.BufferAttribute(bandPositions, 3));
+    const bandMat = new THREE.LineBasicMaterial({ color: 0x00ff77, linewidth: 3, transparent: true, opacity: 0.85 });
+    const bandLine = new THREE.Line(bandGeo, bandMat);
+    bandLine.visible = false;
+    scene.add(bandLine);
+
+    // Glowing Touch Ring around Ball (Clean emerald green glow - No white!)
+    const ballRingGeo = new THREE.RingGeometry(0.18, 0.24, 32);
+    const ballRingMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+    const ballRing = new THREE.Mesh(ballRingGeo, ballRingMat);
+    ballRing.rotation.x = -Math.PI / 2;
+    scene.add(ballRing);
+
+    // Trail Renderer
+    const maxTrailPoints = 35;
+    const trailPositions = new Float32Array(maxTrailPoints * 3);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+    const trailMat = new THREE.LineBasicMaterial({ color: 0x26f7ff, transparent: true, opacity: 0.8 });
+    const trailLine = new THREE.Line(trailGeo, trailMat);
+    scene.add(trailLine);
+    let trailIndex = 0;
+
+    // Ground Tracking & Level Meshes
+    let floorMeshes = [];
+    const downRay = new THREE.Raycaster();
+    const downRayOrigin = new THREE.Vector3();
+    const downRayDir = new THREE.Vector3(0, -1, 0);
+    let lastGroundY = 0.1;
+
+    function getGroundHeight(x, z, fallbackY = null) {
+      downRayOrigin.set(x, 10.0, z);
+      downRay.set(downRayOrigin, downRayDir);
+      const hits = downRay.intersectObjects(floorMeshes, false);
+      if (hits.length > 0) {
+        return hits[0].point.y;
+      }
+      return fallbackY;
+    }
+
+    // Game State
+    let currentHole = 0;
+    let strokes = 0;
+    let isMoving = false;
+    let isInHole = false;
+    let isSinking = false;
+    let sinkFallVel = 0;
+    let ballPos = new THREE.Vector3(0, 0.22, -6);
+    let ballVel = new THREE.Vector3(0, 0, 0);
+    let lastSafePos = new THREE.Vector3(0, 0.22, -6);
+    let courseGroup = new THREE.Group();
+    scene.add(courseGroup);
+
+    let colliders = [];
+    let treeColliders = [];
+    let speedBoosters = [];
+    let sandTraps = [];
+    let bumpers = [];
+    let rotatingBars = [];
+    let holeCupPos = new THREE.Vector3(0, 0.1, 6.5);
+
+    function triggerGameOver() {
+      isMoving = false;
+      ballVel.set(0, 0, 0);
+      document.getElementById('gameover-modal').style.display = 'flex';
+    }
+
+    function retryHole() {
+      document.getElementById('gameover-modal').style.display = 'none';
+      buildCourse(currentHole);
+    }
+
+    // Level Definitions (Calibrated with exact ground surfaces)
+    const holes = [
+      {
+        name: "1. Çam Vadisi",
+        par: 2,
+        spawn: new THREE.Vector3(0, 0.22, -6),
+        cup: new THREE.Vector3(0, 0.1, 6.5)
+      },
+      {
+        name: "2. Değirmen & Kum Tuzağı",
+        par: 3,
+        spawn: new THREE.Vector3(-3.5, 0.22, -6),
+        cup: new THREE.Vector3(3.5, 0.1, 7.5)
+      },
+      {
+        name: "3. Zirve & Pinball Tamponları",
+        par: 3,
+        spawn: new THREE.Vector3(0, 0.22, -6),
+        cup: new THREE.Vector3(0, 0.65, 8.5)
+      }
+    ];
+
+    function buildCourse(idx) {
+      // Clear previous course
+      while(courseGroup.children.length > 0) {
+        courseGroup.remove(courseGroup.children[0]);
+      }
+      colliders = [];
+      treeColliders = [];
+      speedBoosters = [];
+      sandTraps = [];
+      bumpers = [];
+      rotatingBars = [];
+      floorMeshes = [];
+
+      const data = holes[idx];
+      holeCupPos.copy(data.cup);
+      ballPos.copy(data.spawn);
+      lastSafePos.copy(data.spawn);
+      ballVel.set(0, 0, 0);
+      isMoving = false;
+      isInHole = false;
+      isSinking = false;
+      sinkFallVel = 0;
+      strokes = 0;
+      updateHUD();
+
+      // Top görünümünü sıfırla
+      ballMesh.scale.set(1, 1, 1);
+      ballMesh.visible = true;
+
+      document.getElementById('gameover-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+
+      if (idx === 0) buildHole1();
+      else if (idx === 1) buildHole2();
+      else buildHole3();
+
+      buildCupAndFlag(data.cup);
+      spawnDecorations();
+
+      // Ensure all world matrices are calculated so raycasts are 100% accurate
+      scene.updateMatrixWorld(true);
+
+      // Snap ball perfectly onto the top surface of the green
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, data.spawn.y - ballRadius) ?? (data.spawn.y - ballRadius);
+      lastGroundY = initGroundY;
+      ballPos.y = initGroundY + ballRadius;
+      lastSafePos.copy(ballPos);
+
+      // Reset Camera Orbit to look from behind the ball toward the hole cup
+      const toCup = holeCupPos.clone().sub(ballPos);
+      toCup.y = 0;
+      camYaw = Math.atan2(toCup.x, toCup.z);
+      camPitch = 0.42;
+
+      const lookTarget = ballPos.clone().add(new THREE.Vector3(0, camHeightOffset, 0));
+      camera.position.set(
+        ballPos.x - Math.sin(camYaw) * Math.cos(camPitch) * camDist,
+        ballPos.y + Math.sin(camPitch) * camDist,
+        ballPos.z - Math.cos(camYaw) * Math.cos(camPitch) * camDist
+      );
+      camera.lookAt(lookTarget);
+      cameraLookCurrent.copy(lookTarget);
+    }
+
+    function addFloor(x, y, z, w, h, d, mat = null) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      let floorMat = mat;
+      if (!floorMat) {
+        // Her zemin parçasına orantılı turnuva çim dokusu (Dalgalanmasız, max anisotropy)
+        floorMat = grassMat.clone();
+        floorMat.map = grassTex.clone();
+        floorMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+        floorMat.map.generateMipmaps = true;
+        floorMat.map.minFilter = THREE.LinearMipmapLinearFilter;
+        floorMat.map.magFilter = THREE.LinearFilter;
+        const repX = Math.max(1, Math.round(w * 0.85));
+        const repZ = Math.max(1, Math.round(d * 0.85));
+        floorMat.map.repeat.set(repX, repZ);
+        floorMat.map.needsUpdate = true;
+      }
+      const mesh = new THREE.Mesh(geo, floorMat);
+      mesh.position.set(x, y, z);
+      mesh.receiveShadow = true;
+      courseGroup.add(mesh);
+      floorMeshes.push(mesh);
+      return mesh;
+    }
+
+    // --- Yuvarlak Delik Çukuru Açılmış Tek Parça Dikişsiz Zemin ---
+    // Deliğin önü, arkası ve yanları %100 yemyeşil zeminle kaplıdır; sadece yuvarlak delik çukurdur!
+    function addFloorWithCupHole(x, y, z, w, h, d, cupWorldX, cupWorldZ, cupRadius) {
+      const hw = w * 0.5;
+      const hd = d * 0.5;
+      const shape = new THREE.Shape();
+      shape.moveTo(-hw, hd);
+      shape.lineTo(hw, hd);
+      shape.lineTo(hw, -hd);
+      shape.lineTo(-hw, -hd);
+      shape.closePath();
+
+      const localCupX = cupWorldX - x;
+      const localCupZ = cupWorldZ - z;
+      const hole = new THREE.Path();
+      hole.absarc(localCupX, -localCupZ, cupRadius, 0, Math.PI * 2, true);
+      shape.holes = [hole];
+
+      const extrudeSettings = { depth: h, bevelEnabled: false };
+      const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      geo.rotateX(-Math.PI / 2);
+      geo.translate(0, -h * 0.5, 0);
+
+      const floorMat = grassMat.clone();
+      floorMat.map = grassTex.clone();
+      floorMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+      floorMat.map.generateMipmaps = true;
+      floorMat.map.minFilter = THREE.LinearMipmapLinearFilter;
+      floorMat.map.magFilter = THREE.LinearFilter;
+      const repX = Math.max(1, Math.round(w * 0.85));
+      const repZ = Math.max(1, Math.round(d * 0.85));
+      floorMat.map.repeat.set(repX, repZ);
+      floorMat.map.needsUpdate = true;
+
+      const mesh = new THREE.Mesh(geo, floorMat);
+      mesh.position.set(x, y, z);
+      mesh.receiveShadow = true;
+      courseGroup.add(mesh);
+      floorMeshes.push(mesh);
+      return mesh;
+    }
+
+    function addWall(x, y, z, w, h, d) {
+      // Duvarın zeminin altına derinlemesine (0.35m aşağıya) uzanması sağlanır.
+      // Bu sayede alttan ışık kaçması (peter-panning / light leakage) kesinlikle engellenir!
+      const extraDepth = 0.35;
+      const visualH = h + extraDepth;
+      const visualY = y - extraDepth * 0.5;
+
+      const geo = new THREE.BoxGeometry(w, visualH, d);
+      const wallMeshMat = wallMat.clone();
+      wallMeshMat.map = woodTex.clone();
+      wallMeshMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+      const length = Math.max(w, d);
+      wallMeshMat.map.repeat.set(Math.max(1, Math.round(length * 0.7)), 1);
+      wallMeshMat.map.needsUpdate = true;
+
+      const mesh = new THREE.Mesh(geo, wallMeshMat);
+      mesh.position.set(x, visualY, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      courseGroup.add(mesh);
+
+      colliders.push({
+        box: new THREE.Box3().setFromObject(mesh),
+        normal: null
+      });
+      return mesh;
+    }
+
+    function addBooster(x, y, z, w, d, speed = 20) {
+      const geo = new THREE.BoxGeometry(w, 0.04, d);
+      const mesh = new THREE.Mesh(geo, boosterMat);
+      mesh.position.set(x, y + 0.02, z);
+      courseGroup.add(mesh);
+      speedBoosters.push({
+        box: new THREE.Box3().setFromObject(mesh),
+        dir: new THREE.Vector3(0, 0, 1),
+        speed: speed
+      });
+    }
+
+    function addSand(x, y, z, w, d) {
+      const geo = new THREE.BoxGeometry(w, 0.02, d);
+      const mesh = new THREE.Mesh(geo, sandMat);
+      mesh.position.set(x, y + 0.005, z);
+      mesh.receiveShadow = true;
+      courseGroup.add(mesh);
+      sandTraps.push({
+        x: x,
+        y: y,
+        z: z,
+        halfW: w * 0.5,
+        halfD: d * 0.5
+      });
+    }
+
+    function addBumper(x, y, z, radius = 0.4) {
+      const geo = new THREE.CylinderGeometry(radius, radius, 0.5, 24);
+      const mesh = new THREE.Mesh(geo, bumperMat);
+      mesh.position.set(x, y + 0.25, z);
+      mesh.castShadow = true;
+      courseGroup.add(mesh);
+      bumpers.push({
+        mesh: mesh,
+        pos: new THREE.Vector3(x, y, z),
+        radius: radius
+      });
+    }
+
+    function addRotor(x, y, z) {
+      const pivot = new THREE.Group();
+      pivot.position.set(x, y, z);
+      courseGroup.add(pivot);
+
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.6, 16), woodMat);
+      post.position.y = 0.3;
+      post.castShadow = true;
+      pivot.add(post);
+
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.2), woodMat);
+      arm.position.y = 0.25;
+      arm.castShadow = true;
+      pivot.add(arm);
+
+      rotatingBars.push({
+        pivot: pivot,
+        arm: arm,
+        speed: 1.5,
+        halfLen: 1.2,
+        halfThick: 0.10,
+        postRadius: 0.18
+      });
+    }
+
+    function buildCupAndFlag(pos) {
+      // 1. Üç Boyutlu Çukur Kupa Duvarı (3D Sunken Cup Cavity - Açık Silindir İç Yüzey)
+      const cupDepth = 0.22;
+      const cupRadius = 0.21;
+      const cupWallGeo = new THREE.CylinderGeometry(cupRadius, cupRadius * 0.90, cupDepth, 48, 1, true);
+      const cupWallTex = createCupWallTexture();
+      const cupWallMat = new THREE.MeshStandardMaterial({
+        map: cupWallTex,
+        roughness: 0.65,
+        metalness: 0.15,
+        side: THREE.BackSide // Kameranın derinliği ve kupa içini görebilmesi için iç yüzey
+      });
+      const cupWall = new THREE.Mesh(cupWallGeo, cupWallMat);
+      cupWall.position.set(pos.x, pos.y - cupDepth * 0.5 + 0.002, pos.z);
+      courseGroup.add(cupWall);
+
+      // 2. Kupanın Çukur Dip Tabanı (Sunken Bottom Floor)
+      const cupBottomGeo = new THREE.CircleGeometry(cupRadius * 0.90, 48);
+      const cupBottomMat = new THREE.MeshStandardMaterial({
+        color: 0x111619,
+        roughness: 0.75,
+        metalness: 0.25
+      });
+      const cupBottom = new THREE.Mesh(cupBottomGeo, cupBottomMat);
+      cupBottom.rotation.x = -Math.PI / 2;
+      cupBottom.position.set(pos.x, pos.y - cupDepth + 0.002, pos.z);
+      courseGroup.add(cupBottom);
+
+      // 3. Bayrak Direği Taban Kovası (Merkezdeki metalik kovan soket)
+      const socketGeo = new THREE.CylinderGeometry(0.038, 0.042, 0.04, 16);
+      const socketMat = new THREE.MeshStandardMaterial({ color: 0x2a3038, metalness: 0.6, roughness: 0.3 });
+      const socketMesh = new THREE.Mesh(socketGeo, socketMat);
+      socketMesh.position.set(pos.x, pos.y - cupDepth + 0.02, pos.z);
+      courseGroup.add(socketMesh);
+
+      // 4. Deliğin Üst Çevresindeki Net Beyaz Çember Çizgisi (Net ve belirgin hedef halkası)
+      const rimGeo = new THREE.RingGeometry(cupRadius - 0.004, cupRadius + 0.036, 48);
+      const rimMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+      const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+      rimMesh.rotation.x = -Math.PI / 2;
+      rimMesh.position.set(pos.x, pos.y + 0.004, pos.z);
+      courseGroup.add(rimMesh);
+
+      // 5. Profesyonel Beyaz Bayrak Direği (Deliğin dibindeki kovandan yükselir)
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.2 }));
+      pole.position.set(pos.x, pos.y - cupDepth * 0.5 + 0.95, pos.z);
+      pole.castShadow = true;
+      courseGroup.add(pole);
+
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
+      finial.position.set(pos.x, pos.y - cupDepth * 0.5 + 2.05, pos.z);
+      courseGroup.add(finial);
+
+      // 6. Şampiyona Kırmızı Üçgen Bayrak
+      const flagGeo = new THREE.BufferGeometry();
+      const flagVertices = new Float32Array([
+        0, 2.00, 0,
+        0.48, 1.82, 0,
+        0, 1.64, 0
+      ]);
+      flagGeo.setAttribute('position', new THREE.BufferAttribute(flagVertices, 3));
+      flagGeo.computeVertexNormals();
+      const flagMat = new THREE.MeshLambertMaterial({ color: 0xff2535, side: THREE.DoubleSide });
+      const flag = new THREE.Mesh(flagGeo, flagMat);
+      flag.position.set(pos.x, pos.y - cupDepth * 0.5, pos.z);
+      flag.castShadow = true;
+      courseGroup.add(flag);
+    }
+
+    function spawnDecorations() {
+      treeColliders = [];
+      const trees = [
+        [-4.5, -4], [-4.2, 4], [4.5, -2], [4.8, 5], [-3, 8], [3.2, 11]
+      ];
+      trees.forEach(([tx, tz]) => {
+        const tree = new THREE.Group();
+        tree.position.set(tx, 0, tz);
+
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.6, 8), trunkMat);
+        trunk.position.y = 0.3;
+        trunk.castShadow = true;
+        tree.add(trunk);
+
+        const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.9, 8), treeMat);
+        cone1.position.y = 1.0;
+        cone1.castShadow = true;
+        tree.add(cone1);
+
+        const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 8), treeMat);
+        cone2.position.y = 1.55;
+        cone2.castShadow = true;
+        tree.add(cone2);
+
+        courseGroup.add(tree);
+
+        // Aktif ağaç gövdesi çarpışma alanı (Top ağaçlara çarpınca içinden geçemez, doğal olarak seker)
+        treeColliders.push({ x: tx, z: tz, radius: 0.28 });
+      });
+    }
+
+    // --- Hole 1 (Hollow 3D Sunken Cup & Dikişsiz Canlı Yeşil Zemin) ---
+    function buildHole1() {
+      // Cup at (0, 0.1, 6.5) - Deliğin önü, arkası ve çevresi %100 yemyeşil zeminle kaplıdır!
+      addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
+
+      addWall(-1.9, 0.35, 0, 0.2, 0.7, 16.2);
+      addWall(1.9, 0.35, 0, 0.2, 0.7, 16.2);
+      addWall(0, 0.35, -8.1, 3.8, 0.7, 0.2);
+      addWall(0, 0.35, 8.1, 3.8, 0.7, 0.2);
+
+      // Sand Trap on the right
+      addSand(1.0, 0.1, 2.5, 1.3, 3.0);
+
+      // Bumper on left
+      addBumper(-1.0, 0.1, 2.5, 0.4);
+    }
+
+    // --- Hole 2 (Sıfır Çakışma, Hollow 3D Sunken Cup & Canlı Zemin) ---
+    function buildHole2() {
+      // Sol koridor (z: -7.0 to 0.8, x: -5.2 to -1.8) -> Çakışmasız tam sınır
+      addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
+      addWall(-5.2, 0.35, -1.5, 0.2, 0.7, 11.2);
+      addWall(-3.5, 0.35, -7.1, 3.6, 0.7, 0.2);
+      addWall(-1.8, 0.35, -3.0, 0.2, 0.7, 8.0);
+
+      // Orta dönüş koridoru (z: 0.8 to 4.2, x: -5.2 to +5.2)
+      addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
+      addWall(-1.7, 0.35, 4.2, 7.0, 0.7, 0.2);
+      addWall(0, 0.35, 0.9, 3.8, 0.7, 0.2);
+
+      // Rotating Windmill obstacle in the corner!
+      addRotor(0.5, 0.1, 2.5);
+
+      // Sand trap inside curve
+      addSand(-1.0, 0.1, 2.5, 1.5, 1.5);
+
+      // Sağ Fairway (Cup at 3.5, 0.1, 7.5) - Önü, arkası ve çevresi %100 yemyeşil zemin!
+      addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
+
+      addWall(5.2, 0.35, 5.25, 0.2, 0.7, 8.9);
+      addWall(1.8, 0.35, 6.85, 0.2, 0.7, 5.5);
+      addWall(3.5, 0.35, 9.6, 3.6, 0.7, 0.2);
+    }
+
+    // --- Hole 3 (Pürüzsüz Eğimli Rampa & Hollow 3D Sunken Cup) ---
+    function buildHole3() {
+      // 1. Lower fairway
+      addFloor(0, 0, -4, 3.8, 0.2, 7.0);
+      addWall(-2.0, 0.35, -4, 0.2, 0.7, 7.2);
+      addWall(2.0, 0.35, -4, 0.2, 0.7, 7.2);
+      addWall(0, 0.35, -7.6, 4.2, 0.7, 0.2);
+
+      // 2. Gentle Incline Ramp
+      const ramp = addFloor(0, 0.275, 2.0, 3.8, 0.2, 5.1);
+      ramp.rotation.x = -0.11;
+      ramp.updateMatrixWorld(true);
+      const rw1 = addWall(-2.0, 0.62, 2.0, 0.2, 0.8, 5.1);
+      rw1.rotation.x = -0.11;
+      const rw2 = addWall(2.0, 0.62, 2.0, 0.2, 0.8, 5.1);
+      rw2.rotation.x = -0.11;
+
+      // 3. Upper Green Plateau (Cup at 0, 0.65, 8.5) - Önü, arkası ve çevresi %100 yemyeşil zemin!
+      addFloorWithCupHole(0, 0.55, 7.45, 4.6, 0.2, 6.2, 0, 8.5, 0.21);
+
+      addWall(-2.4, 0.95, 7.45, 0.2, 0.9, 6.4);
+      addWall(2.4, 0.95, 7.45, 0.2, 0.9, 6.4);
+      addWall(0, 1.05, 10.6, 5.0, 1.1, 0.2);
+
+      addWall(-2.2, 0.95, 4.35, 0.5, 0.9, 0.2);
+      addWall(2.2, 0.95, 4.35, 0.5, 0.9, 0.2);
+
+      addBumper(-1.4, 0.8, 6.5, 0.4);
+      addBumper(1.4, 0.8, 6.5, 0.4);
+    }
+
+    // --- Camera Orbit & Slingshot Touch Controls ---
+    let camYaw = 0;
+    let camPitch = 0.42;
+    const camDist = 5.4;
+    const camHeightOffset = 0.35;
+    let cameraLookCurrent = new THREE.Vector3();
+
+    // Interaction modes: 'NONE', 'SLINGSHOT', 'ORBIT'
+    let interactionMode = 'NONE';
+    let touchStart = { x: 0, y: 0 };
+    let lastPointer = { x: 0, y: 0 };
+    let lockedCamDir = new THREE.Vector3(0, 0, 1);
+    let lockedCamRight = new THREE.Vector3(1, 0, 0);
+
+    let aimDir = new THREE.Vector3(0, 0, 1);
+    let powerRatio = 0;
+    const maxDragPx = 180;
+
+    const powerBadge = document.getElementById('power-badge');
+
+    function getBallScreenPos() {
+      const v = ballPos.clone().project(camera);
+      return {
+        x: (v.x * 0.5 + 0.5) * window.innerWidth,
+        y: (-v.y * 0.5 + 0.5) * window.innerHeight,
+        inFront: v.z < 1.0
+      };
+    }
+
+    function onPointerDown(e) {
+      initAudio();
+      if (isMoving || isInHole) return;
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      lastPointer = { x: clientX, y: clientY };
+
+      const ballScreen = getBallScreenPos();
+      const distToBall = Math.hypot(clientX - ballScreen.x, clientY - ballScreen.y);
+
+      // Sapan özelliği SADECE topun üzerine dokunulup çekildiğinde çalışır (65px geniş temas yarıçapı)
+      if (distToBall <= 65) {
+        interactionMode = 'SLINGSHOT';
+        touchStart = { x: clientX, y: clientY };
+        powerRatio = 0;
+
+        // Dokunma anında kamera yönünü kilitle (Böylece nişan alırken matematik milim şaşmaz)
+        lockedCamDir = new THREE.Vector3();
+        camera.getWorldDirection(lockedCamDir);
+        lockedCamDir.y = 0;
+        lockedCamDir.normalize();
+
+        lockedCamRight = new THREE.Vector3();
+        lockedCamRight.crossVectors(lockedCamDir, new THREE.Vector3(0, 1, 0)).normalize();
+      } else {
+        // Ekranda top harici herhangi bir yere dokunulursa: Sadece kamera açısı döner
+        interactionMode = 'ORBIT';
+      }
+    }
+
+    function onPointerMove(e) {
+      if (isMoving || isInHole) return;
+      if (e.cancelable && interactionMode !== 'NONE') e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      if (interactionMode === 'ORBIT') {
+        const dx = clientX - lastPointer.x;
+        const dy = clientY - lastPointer.y;
+        lastPointer = { x: clientX, y: clientY };
+
+        // Ekran kaydırması ile kamera açısını top etrafında pürüzsüz döndür
+        camYaw -= dx * 0.0055;
+        camPitch = Math.max(0.12, Math.min(1.22, camPitch + dy * 0.004));
+        return;
+      }
+
+      if (interactionMode === 'SLINGSHOT') {
+        // Sapan çekiş vektörü: Kamera 100% kilitlidir, top ekranda milim oynamaz!
+        const pullX = clientX - touchStart.x;
+        const pullY = clientY - touchStart.y;
+        const dist = Math.hypot(pullX, pullY);
+
+        if (dist > 8) {
+          powerRatio = Math.min(dist / maxDragPx, 1.0);
+
+          const normForward = pullY / dist;  // geriye (kendimize) doğru çekildikçe ileri fırlar
+          const normRight = -pullX / dist;   // sola çekildikçe sağa fırlar
+
+          aimDir.copy(lockedCamDir).multiplyScalar(normForward).addScaledVector(lockedCamRight, normRight);
+          aimDir.y = 0;
+          aimDir.normalize();
+
+          updateAimVisuals();
+        } else {
+          powerRatio = 0;
+          hideAimVisuals();
+        }
+      }
+    }
+
+    function onPointerUp() {
+      if (interactionMode === 'SLINGSHOT') {
+        hideAimVisuals();
+        if (powerRatio >= 0.04 && !isMoving && !isInHole) {
+          shootBall(aimDir, powerRatio);
+        }
+      }
+      interactionMode = 'NONE';
+      powerRatio = 0;
+    }
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    window.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp, { passive: true });
+
+    function updateAimVisuals() {
+      aim3DGroup.visible = true;
+      bandLine.visible = true;
+      powerBadge.style.display = 'block';
+
+      // Renk geçişi: Düşük güçte Canlı Yeşil -> Orta güçte Elektrik Sarısı -> Yüksek güçte Ateş Kırmızısı
+      let colorHex = 0x00ff77;
+      let emissiveHex = 0x00dd55;
+      if (powerRatio > 0.65) {
+        colorHex = 0xff2835;
+        emissiveHex = 0xee1520;
+      } else if (powerRatio > 0.30) {
+        colorHex = 0xffd214;
+        emissiveHex = 0xddaa00;
+      }
+
+      // Çektikçe artan 3D Chevron Oklar (1'den 9'a kadar dinamik artış)
+      const activeCount = Math.min(Math.max(Math.floor(powerRatio * 9) + 1, 1), 9);
+      const aimAngle = Math.atan2(aimDir.x, aimDir.z);
+      const spacing = 0.36 + powerRatio * 0.22;
+      const groundSurfaceY = ballPos.y - ballRadius + 0.012;
+
+      for (let i = 0; i < maxChevrons; i++) {
+        if (i < activeCount) {
+          const chevronDist = 0.35 + (i + 1) * spacing;
+          aimChevrons[i].position.set(
+            ballPos.x + aimDir.x * chevronDist,
+            groundSurfaceY,
+            ballPos.z + aimDir.z * chevronDist
+          );
+          aimChevrons[i].rotation.y = aimAngle;
+          aimChevrons[i].material.color.setHex(colorHex);
+          aimChevrons[i].material.emissive.setHex(emissiveHex);
+          aimChevrons[i].visible = true;
+        } else {
+          aimChevrons[i].visible = false;
+        }
+      }
+
+      // En uçtaki 3 Boyutlu Ana Ok Ucu
+      const tipDist = 0.35 + (activeCount + 1) * spacing;
+      arrowheadMesh.position.set(
+        ballPos.x + aimDir.x * tipDist,
+        groundSurfaceY,
+        ballPos.z + aimDir.z * tipDist
+      );
+      arrowheadMesh.rotation.y = aimAngle;
+      arrowheadMesh.material.color.setHex(colorHex);
+      arrowheadMesh.material.emissive.setHex(emissiveHex);
+      arrowheadMesh.visible = true;
+
+      // Topun arkasındaki 3D elastik sapan çekiş bandı
+      const startPos = ballPos.clone().add(new THREE.Vector3(0, 0.02, 0));
+      const bandPosAttr = bandLine.geometry.attributes.position;
+      const left = startPos.clone().addScaledVector(aimDir, -0.15).add(new THREE.Vector3(-aimDir.z, 0, aimDir.x).multiplyScalar(0.24));
+      const right = startPos.clone().addScaledVector(aimDir, -0.15).add(new THREE.Vector3(aimDir.z, 0, -aimDir.x).multiplyScalar(0.24));
+      const pull = startPos.clone().addScaledVector(aimDir, -(0.25 + powerRatio * 0.7));
+
+      bandPosAttr.setXYZ(0, left.x, left.y, left.z);
+      bandPosAttr.setXYZ(1, pull.x, pull.y, pull.z);
+      bandPosAttr.setXYZ(2, right.x, right.y, right.z);
+      bandPosAttr.needsUpdate = true;
+      bandMat.color.setHex(colorHex);
+
+      // Güç Rozeti
+      const pct = Math.round(powerRatio * 100);
+      powerBadge.innerText = `%${pct} GÜÇ`;
+      powerBadge.style.borderColor = '#' + colorHex.toString(16).padStart(6, '0');
+    }
+
+    function hideAimVisuals() {
+      aim3DGroup.visible = false;
+      bandLine.visible = false;
+      powerBadge.style.display = 'none';
+      for (let i = 0; i < maxChevrons; i++) {
+        aimChevrons[i].visible = false;
+      }
+      arrowheadMesh.visible = false;
+    }
+
+    function shootBall(dir, power) {
+      isMoving = true;
+      strokes++;
+      updateHUD();
+      lastSafePos.copy(ballPos);
+
+      // Hassas kısa vuruşlar (putt) ve güçlü uzun atışlar:
+      // 5% çekme: ~0.65 m/s (nazik kısa dokunuş)
+      // 20% çekme: ~2.3 m/s (orta-kısa mesafe)
+      // 50% çekme: ~10.2 m/s (sağlam fairway sürüşü)
+      // 100% çekme: ~34.5 m/s (tam güç roket atış)
+      const curvedPower = Math.pow(power, 1.8);
+      const speed = 0.5 + curvedPower * 34.0;
+      ballVel.copy(dir).multiplyScalar(speed);
+      ballVel.y = 0;
+
+      playPutt(power);
+    }
+
+    function updateHUD() {
+      document.getElementById('hole-name').innerText = holes[currentHole].name;
+      document.getElementById('par-badge').innerText = `PAR: ${holes[currentHole].par}`;
+      document.getElementById('stroke-badge').innerText = `VURUŞ: ${strokes}`;
+    }
+
+    // --- Physics Collision Helpers ---
+    function resolveTreeCollisions() {
+      treeColliders.forEach(t => {
+        const dx = ballPos.x - t.x;
+        const dz = ballPos.z - t.z;
+        const dist = Math.hypot(dx, dz);
+        const minDist = t.radius + ballRadius;
+        if (dist < minDist && dist > 0.0001) {
+          const nx = dx / dist;
+          const nz = dz / dist;
+          ballPos.x = t.x + nx * (minDist + 0.008);
+          ballPos.z = t.z + nz * (minDist + 0.008);
+          const dot = ballVel.x * nx + ballVel.z * nz;
+          if (dot < 0) {
+            ballVel.x = (ballVel.x - 1.8 * dot * nx) * 0.75;
+            ballVel.z = (ballVel.z - 1.8 * dot * nz) * 0.75;
+            playBounce();
+          }
+        }
+      });
+    }
+
+    function resolveRotatingBarCollision(r) {
+      // 1. Merkez silindir direk çarpışması
+      const dxPost = ballPos.x - r.pivot.position.x;
+      const dzPost = ballPos.z - r.pivot.position.z;
+      const distPost = Math.hypot(dxPost, dzPost);
+      const minPostDist = r.postRadius + ballRadius;
+      if (distPost < minPostDist && distPost > 0.0001) {
+        const nx = dxPost / distPost;
+        const nz = dzPost / distPost;
+        ballPos.x = r.pivot.position.x + nx * (minPostDist + 0.004);
+        ballPos.z = r.pivot.position.z + nz * (minPostDist + 0.004);
+        const dot = ballVel.x * nx + ballVel.z * nz;
+        if (dot < 0) {
+          ballVel.x = (ballVel.x - 1.7 * dot * nx) * 0.75;
+          ballVel.z = (ballVel.z - 1.7 * dot * nz) * 0.75;
+        } else {
+          ballVel.x += nx * 1.5;
+          ballVel.z += nz * 1.5;
+        }
+        isMoving = true;
+        playBounce();
+        return true;
+      }
+
+      // 2. Dönen Tahta Kol Çarpışması (Birebir görünüm sınırıyla eşleşen tam OBB Fiziği)
+      const theta = r.pivot.rotation.y;
+      const cosT = Math.cos(theta);
+      const sinT = Math.sin(theta);
+      const dx = ballPos.x - r.pivot.position.x;
+      const dz = ballPos.z - r.pivot.position.z;
+
+      // Dünya koordinatını tahtanın yerel eksenine dönüştür
+      // Three.js Y-rotasyon matrisinin tam tersi (Inverse Transform)
+      const lx =  dx * cosT - dz * sinT;
+      const lz =  dx * sinT + dz * cosT;
+
+      // Tahta kutusunun kenar yüzeylerine olan en yakın nokta
+      const clampedX = Math.max(-r.halfLen, Math.min(r.halfLen, lx));
+      const clampedZ = Math.max(-r.halfThick, Math.min(r.halfThick, lz));
+      const diffX = lx - clampedX;
+      const diffZ = lz - clampedZ;
+      const dist = Math.hypot(diffX, diffZ);
+
+      // Top tahtanın görünür modeline fiziksel olarak temas etmiyorsa kesinlikle etkilenmez (Sıfır hayalet çarpışma)
+      if (dist >= ballRadius) {
+        return false;
+      }
+
+      // Temas normali ve dışarı itme miktarı
+      let lnx = 0, lnz = 0;
+      let pushDist = 0;
+
+      if (dist > 0.0001) {
+        // Top dış yüzeyle temas halinde
+        lnx = diffX / dist;
+        lnz = diffZ / dist;
+        pushDist = ballRadius - dist + 0.004;
+      } else {
+        // Top merkezde örtüşmüşse en kısa eksenden dışarı çıkar
+        const ox = r.halfLen - Math.abs(lx);
+        const oz = r.halfThick - Math.abs(lz);
+        if (oz <= ox) {
+          lnx = 0;
+          lnz = Math.sign(lz) || 1;
+          pushDist = oz + ballRadius + 0.004;
+        } else {
+          lnx = Math.sign(lx) || 1;
+          lnz = 0;
+          pushDist = ox + ballRadius + 0.004;
+        }
+      }
+
+      const pushLx = lx + lnx * pushDist;
+      const pushLz = lz + lnz * pushDist;
+
+      // Düzeltilmiş konumu ve normali Dünya koordinatına geri dönüştür
+      ballPos.x = r.pivot.position.x + pushLx * cosT + pushLz * sinT;
+      ballPos.z = r.pivot.position.z - pushLx * sinT + pushLz * cosT;
+
+      const wnx =  lnx * cosT + lnz * sinT;
+      const wnz = -lnx * sinT + lnz * cosT;
+
+      // Tahtanın o noktadaki anlık çizgisel dönüş hızı ve yönü (V = omega x r)
+      const vBarX =  r.speed * dz;
+      const vBarZ = -r.speed * dx;
+      const barSpeed = Math.hypot(vBarX, vBarZ);
+
+      // Topun bağıl hızı ve sekme kontrolü
+      const curBallSpd = ballVel.length();
+      const vRelX = ballVel.x - vBarX;
+      const vRelZ = ballVel.z - vBarZ;
+      const vDotN = vRelX * wnx + vRelZ * wnz;
+
+      if (curBallSpd < barSpeed + 1.2 || vDotN >= 0) {
+        // Tahtanın etki alanında dururken veya yavaşken: Top tahtanın dönüş yönünde pürüzsüzce sürüklenir
+        ballVel.x = vBarX * 1.05 + wnx * 0.35;
+        ballVel.z = vBarZ * 1.05 + wnz * 0.35;
+      } else {
+        // Hızlı atışla tahtaya çarpıldığında: Ahşap yüzeyden temiz ve gerçekçi sekme
+        const restitution = 0.65;
+        ballVel.x = vBarX + (vRelX - (1.0 + restitution) * vDotN * wnx);
+        ballVel.z = vBarZ + (vRelZ - (1.0 + restitution) * vDotN * wnz);
+      }
+
+      isMoving = true;
+      playBounce();
+      return true;
+    }
+
+    // --- Physics Simulation Loop ---
+    const clock = new THREE.Clock();
+
+    function updatePhysics(dt) {
+      if (dt > 0.05) dt = 0.05;
+
+      // Rotate windmill rotors
+      rotatingBars.forEach(r => {
+        r.pivot.rotation.y += r.speed * dt;
+      });
+
+      // Top dururken dönen tahta topa çarparsa topu hareketlendir
+      if (!isSinking && !isInHole) {
+        rotatingBars.forEach(r => {
+          resolveRotatingBarCollision(r);
+        });
+      }
+
+      // 1. Top Deliğe Girince: Fiziksel olarak yuvarlak deliğin içine düşüp kaybolması
+      if (isSinking) {
+        ballPos.x += (holeCupPos.x - ballPos.x) * 16.0 * dt;
+        ballPos.z += (holeCupPos.z - ballPos.z) * 16.0 * dt;
+
+        sinkFallVel += 14.0 * dt;
+        ballPos.y -= sinkFallVel * dt;
+
+        // Top deliğe girdikçe küçülerek tamamen deliğin içine çekilip kaybolur
+        const curScale = ballMesh.scale.x;
+        const nextScale = Math.max(0, curScale - 3.2 * dt);
+        ballMesh.scale.set(nextScale, nextScale, nextScale);
+        if (nextScale <= 0.05) {
+          ballMesh.visible = false;
+        }
+        ballShadow.visible = false;
+        return;
+      }
+
+      if (!isMoving || isInHole) return;
+
+      // 2. Yüksek Hızlarda Duvarlardan Geçmeyi Kesinlikle Önleyen Sub-stepping (Continuous Collision Detection)
+      const curSpeed = ballVel.length();
+      const numSteps = Math.min(Math.max(Math.ceil((curSpeed * dt) / 0.035), 1), 10);
+      const subDt = dt / numSteps;
+
+      for (let s = 0; s < numSteps; s++) {
+        // Hassas kısa vuruş kontrolü: Düşük hızlarda yumuşakça durur, yüksek hızda uzun kayar
+        const curSpd = ballVel.length();
+        if (curSpd < 2.5) {
+          ballVel.multiplyScalar(Math.pow(0.952, subDt * 60));
+        } else {
+          ballVel.multiplyScalar(Math.pow(0.974, subDt * 60));
+        }
+
+        // Alt adımı ilerlet
+        ballPos.x += ballVel.x * subDt;
+        ballPos.z += ballVel.z * subDt;
+
+        // Dönen Tahta Engel Çarpışmaları (Aktif fiziksel çarpışma)
+        rotatingBars.forEach(r => {
+          resolveRotatingBarCollision(r);
+        });
+
+        // Ağaç Gövdeleri Çarpışmaları (Aktif ağaç çarpışması)
+        resolveTreeCollisions();
+
+        // Pinball Tamponları
+        bumpers.forEach(b => {
+          const dist2D = Math.hypot(ballPos.x - b.pos.x, ballPos.z - b.pos.z);
+          if (dist2D < b.radius + ballRadius) {
+            const normal = new THREE.Vector3(ballPos.x - b.pos.x, 0, ballPos.z - b.pos.z).normalize();
+            ballVel.reflect(normal).multiplyScalar(1.35);
+            if (ballVel.length() < 12.0) ballVel.setLength(12.0);
+            ballPos.addScaledVector(normal, 0.08);
+            playBumper();
+          }
+        });
+
+        // Duvar Çarpışmaları (Asla duvarın içinden geçemez!)
+        colliders.forEach(c => {
+          if (c.box.containsPoint(ballPos)) {
+            const center = new THREE.Vector3();
+            c.box.getCenter(center);
+            const size = new THREE.Vector3();
+            c.box.getSize(size);
+
+            const dx = ballPos.x - center.x;
+            const dz = ballPos.z - center.z;
+            const ox = size.x * 0.5 + ballRadius - Math.abs(dx);
+            const oz = size.z * 0.5 + ballRadius - Math.abs(dz);
+
+            if (ox < oz) {
+              ballVel.x = -ballVel.x * 0.85;
+              ballPos.x = center.x + Math.sign(dx) * (size.x * 0.5 + ballRadius + 0.015);
+            } else {
+              ballVel.z = -ballVel.z * 0.85;
+              ballPos.z = center.z + Math.sign(dz) * (size.z * 0.5 + ballRadius + 0.015);
+            }
+            playBounce();
+          }
+        });
+
+        // Kum Tuzakları (Top kum alanındayken dengeli kum direnci)
+        sandTraps.forEach(s => {
+          if (Math.abs(ballPos.x - s.x) <= s.halfW + ballRadius * 0.4 &&
+              Math.abs(ballPos.z - s.z) <= s.halfD + ballRadius * 0.4) {
+            // Dengeli kum sürtünmesi: 100% güçle rahatça çıkar, zayıf vuruşlar kumda kalır
+            ballVel.multiplyScalar(Math.pow(0.915, subDt * 60));
+          }
+        });
+      }
+
+      // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü
+      const toCup = holeCupPos.clone().sub(ballPos);
+      toCup.y = 0;
+      const cupDist = toCup.length();
+
+      if (cupDist < 0.45) {
+        ballVel.addScaledVector(toCup.normalize(), 8.0 * dt);
+        if (cupDist < 0.20 && ballVel.length() < 14.0) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return;
+        }
+      }
+
+      // 4. Zemin Yüzey Kontrolü & Parkur Dışı (Game Over) Algılama
+      const groundY = getGroundHeight(ballPos.x, ballPos.z);
+      if (groundY !== null) {
+        // Çim pistin üstünde
+        lastGroundY = groundY;
+        ballPos.y = groundY + ballRadius;
+      } else if (cupDist < 0.40) {
+        // 3D Çukur kupa ağzının tam üstünde (Doğal çukur seviyesi)
+        ballPos.y = holeCupPos.y + ballRadius;
+      } else {
+        // Pistten dışarı düştü: Aşağı düşme fiziği & GAME OVER
+        ballPos.y -= 12.0 * dt;
+        if (ballPos.y < -0.45) {
+          triggerGameOver();
+          return;
+        }
+      }
+
+      // Ekstra güvenlik sınır kontrolü: Parkur dışı koruması
+      if (Math.abs(ballPos.x) > 8.5 || Math.abs(ballPos.z) > 16.0) {
+        triggerGameOver();
+        return;
+      }
+
+      // Topun Tamamen Durması
+      if (ballVel.length() < 0.18) {
+        ballVel.set(0, 0, 0);
+        isMoving = false;
+        lastSafePos.copy(ballPos);
+      }
+
+      // Trail Update
+      const trailAttr = trailLine.geometry.attributes.position;
+      trailAttr.setXYZ(trailIndex, ballPos.x, ballPos.y, ballPos.z);
+      trailIndex = (trailIndex + 1) % maxTrailPoints;
+      trailAttr.needsUpdate = true;
+    }
+
+    function showHoleModal() {
+      const modal = document.getElementById('modal');
+      const title = document.getElementById('modal-title');
+      const stars = document.getElementById('modal-stars');
+      const score = document.getElementById('modal-score');
+      const par = holes[currentHole].par;
+      const diff = strokes - par;
+
+      if (strokes === 1) {
+        title.innerText = "HOLE IN ONE! 🌟";
+        stars.innerText = "⭐⭐⭐";
+      } else if (diff <= -1) {
+        title.innerText = "BIRDIE! 🦅";
+        stars.innerText = "⭐⭐⭐";
+      } else if (diff === 0) {
+        title.innerText = "PAR! 🎯";
+        stars.innerText = "⭐⭐☆";
+      } else {
+        title.innerText = "TEBRİKLER! ⛳";
+        stars.innerText = "⭐☆☆";
+      }
+
+      score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})`;
+      document.getElementById('next-btn').innerText = (currentHole === holes.length - 1) ? "ŞAMPİYONSUN! BAŞTAN OYNA 🏆" : "SONRAKİ DELİK ➡️";
+      modal.style.display = 'flex';
+    }
+
+    function nextHole() {
+      document.getElementById('modal').style.display = 'none';
+      currentHole = (currentHole + 1) % holes.length;
+      buildCourse(currentHole);
+    }
+
+    // --- Camera Smooth Tracking ---
+    function updateCamera(dt) {
+      // Sapanla nişan alınırken kamera TAMAMEN KİLİTLİDİR (Top ekranda asla kaymaz veya titremez!)
+      if (interactionMode === 'SLINGSHOT') {
+        return;
+      }
+
+      // Top deliğe düşerken kamera açısı ASLA aşağıya eğilmez, zemin/delik seviyesinde kilitli kalır
+      const targetLookPos = ballPos.clone();
+      if (isSinking || isInHole) {
+        targetLookPos.x = holeCupPos.x;
+        targetLookPos.z = holeCupPos.z;
+        targetLookPos.y = holeCupPos.y;
+      }
+
+      const lookTarget = targetLookPos.clone().add(new THREE.Vector3(0, camHeightOffset, 0));
+      const targetCamPos = new THREE.Vector3(
+        targetLookPos.x - Math.sin(camYaw) * Math.cos(camPitch) * camDist,
+        targetLookPos.y + Math.sin(camPitch) * camDist,
+        targetLookPos.z - Math.cos(camYaw) * Math.cos(camPitch) * camDist
+      );
+
+      if (isMoving) {
+        // Top hareket halindeyken pürüzsüz takip
+        camera.position.lerp(targetCamPos, dt * 6.0);
+        cameraLookCurrent.lerp(lookTarget, dt * 8.0);
+        camera.lookAt(cameraLookCurrent);
+      } else if (isSinking || isInHole) {
+        // Top deliğe düşerken kamera aşağıya eğilmeden sakin ve dengeli şekilde deliği odakta tutar
+        camera.position.lerp(targetCamPos, dt * 5.0);
+        cameraLookCurrent.lerp(lookTarget, dt * 7.0);
+        camera.lookAt(cameraLookCurrent);
+      } else if (interactionMode === 'ORBIT') {
+        // Ekran kaydırılırken kamera açısını anında ve pürüzsüzce senkronize et (Sıfır mikro-titreme)
+        camera.position.copy(targetCamPos);
+        cameraLookCurrent.copy(lookTarget);
+        camera.lookAt(cameraLookCurrent);
+      } else {
+        // Dururken hedeflenen orbit açısına yumuşakça otur
+        camera.position.lerp(targetCamPos, dt * 8.0);
+        cameraLookCurrent.lerp(lookTarget, dt * 10.0);
+        camera.lookAt(cameraLookCurrent);
+      }
+    }
+
+    // --- Render Loop ---
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      updatePhysics(dt);
+      ballMesh.position.copy(ballPos);
+
+      // Gerçekçi temas gölgesi (Topun hemen altında yeşil zemin üzerinde)
+      if (!isInHole) {
+        ballShadow.visible = true;
+        ballShadow.position.set(ballPos.x, ballPos.y - ballRadius + 0.004, ballPos.z);
+      } else {
+        ballShadow.visible = false;
+      }
+
+      // Topun altındaki dokunma alanı halkası
+      if (!isMoving && !isInHole && interactionMode !== 'SLINGSHOT') {
+        ballRing.visible = true;
+        ballRing.position.set(ballPos.x, ballPos.y - ballRadius + 0.015, ballPos.z);
+        ballRingMat.opacity = 0.45 + 0.25 * Math.sin(clock.getElapsedTime() * 4.0);
+      } else {
+        ballRing.visible = false;
+      }
+
+      updateCamera(dt);
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Start Hole 1
+    buildCourse(0);
+    animate();
+  </script>
+</body>
+</html>
