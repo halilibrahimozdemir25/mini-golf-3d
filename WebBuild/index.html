@@ -517,7 +517,62 @@
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    // --- Procedural High-End Wooden Wall Top Rail Cap (Ultra-Sharp, Beveled, Zero-Aliasing) ---
+    function createWoodRailTopTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      // 1. Sıcak sedir / meşe temel zemin tonu (#96572a)
+      ctx.fillStyle = '#96572a';
+      ctx.fillRect(0, 0, 512, 128);
+
+      // 2. Boyuna pürüzsüz saten ahşap damarları (Boyuna uzanan zarif dalgalı lifler)
+      for (let y = 14; y < 114; y++) {
+        const wave = Math.sin(y * 0.12) * 8 + Math.cos(y * 0.04) * 12;
+        const isDark = (Math.floor((y + wave * 0.3) / 12) % 2 === 0);
+        const alpha = 0.07 + Math.sin(y * 0.2) * 0.04;
+        ctx.fillStyle = isDark ? `rgba(60, 28, 10, ${alpha})` : `rgba(215, 145, 85, ${alpha})`;
+        ctx.fillRect(0, y, 512, 1);
+      }
+
+      // 3. Boyuna ince ahşap lifleri ve gözenekler (Asla moiré/titreme yapmaz)
+      ctx.fillStyle = 'rgba(40, 18, 6, 0.10)';
+      for (let i = 0; i < 300; i++) {
+        const px = Math.random() * 512;
+        const py = 16 + Math.random() * 96;
+        const plen = 20 + Math.random() * 60;
+        ctx.fillRect(px, py, plen, 1);
+      }
+
+      // 4. Kenar Pahları (Beveled Chamfers: Üstte ve altta 3D derinlik veren pürüzsüz kenar ışıltıları)
+      // Üst Kenar Pahı (y: 0 - 16)
+      const gradTop = ctx.createLinearGradient(0, 0, 0, 16);
+      gradTop.addColorStop(0.0, 'rgba(25, 10, 4, 0.40)');   // Dış kenar kontrast çizgisi
+      gradTop.addColorStop(0.35, 'rgba(245, 195, 145, 0.55)'); // Açık pah ışıltısı
+      gradTop.addColorStop(1.0, 'rgba(245, 195, 145, 0.0)');
+      ctx.fillStyle = gradTop;
+      ctx.fillRect(0, 0, 512, 16);
+
+      // Alt Kenar Pahı (y: 112 - 128)
+      const gradBottom = ctx.createLinearGradient(0, 112, 0, 128);
+      gradBottom.addColorStop(0.0, 'rgba(245, 195, 145, 0.0)');
+      gradBottom.addColorStop(0.65, 'rgba(245, 195, 145, 0.55)'); // Açık pah ışıltısı
+      gradBottom.addColorStop(1.0, 'rgba(25, 10, 4, 0.40)');   // Dış kenar kontrast çizgisi
+      ctx.fillStyle = gradBottom;
+      ctx.fillRect(0, 112, 512, 16);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
       tex.generateMipmaps = true;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       tex.magFilter = THREE.LinearFilter;
@@ -623,6 +678,17 @@
       metalness: 0.04
     });
     const wallMat = woodMat;
+
+    // Kusursuz, pahlı ve net üst küpeşte malzemesi (Ultra-Crisp Top Rail Cap)
+    const woodRailTopTex = createWoodRailTopTexture();
+    woodRailTopTex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+    const wallTopMat = new THREE.MeshStandardMaterial({
+      map: woodRailTopTex,
+      roughness: 0.40,
+      metalness: 0.02
+    });
+    // BoxGeometry yüzey dizilimi: [+X, -X, +Y(üst), -Y(alt), +Z, -Z]
+    const wallMaterials = [wallMat, wallMat, wallTopMat, wallMat, wallMat, wallMat];
     const sandMat = new THREE.MeshStandardMaterial({ color: 0xedd68a, roughness: 0.95, metalness: 0.0 });
     const boosterTex = createBoosterTexture();
     const boosterMat = new THREE.MeshBasicMaterial({ map: boosterTex });
@@ -989,6 +1055,48 @@
       return mesh;
     }
 
+    // Duvarların yan ve üst yüzeylerine piksel kalitesinde, açı değiştikçe ASLA bozulmayan UV haritalaması
+    function setupWallUVs(geo, w, h, d) {
+      const uvs = geo.attributes.uv.array;
+      const isAlongZ = d >= w;
+      const len = isAlongZ ? d : w;
+      const repLen = Math.max(1, len / 1.6);
+
+      function setFaceUV(faceIdx, u0, v0, u1, v1, u2, v2, u3, v3) {
+        const base = faceIdx * 8;
+        uvs[base + 0] = u0; uvs[base + 1] = v0;
+        uvs[base + 2] = u1; uvs[base + 3] = v1;
+        uvs[base + 4] = u2; uvs[base + 5] = v2;
+        uvs[base + 6] = u3; uvs[base + 7] = v3;
+      }
+
+      if (isAlongZ) {
+        // Face 2 (+Y Üst Küpeşte / Rail Cap): Boyuna pürüzsüz akış, kenarlarda 3D pah ışıltısı
+        setFaceUV(2, 0, 0,  0, 1,  repLen, 0,  repLen, 1);
+        // Face 3 (-Y Alt):
+        setFaceUV(3, 0, 0,  0, 1,  repLen, 0,  repLen, 1);
+        // Face 0 (+X) ve 1 (-X) Uzun Yan Yüzeyler: Boyuna ahşap kalaslar
+        setFaceUV(0, 0, 1,  repLen, 1,  0, 0,  repLen, 0);
+        setFaceUV(1, 0, 1,  repLen, 1,  0, 0,  repLen, 0);
+        // Face 4 (+Z) ve 5 (-Z) Kısa Uç Kapaklar
+        setFaceUV(4, 0, 1, 1, 1, 0, 0, 1, 0);
+        setFaceUV(5, 0, 1, 1, 1, 0, 0, 1, 0);
+      } else {
+        // isAlongX:
+        // Face 2 (+Y Üst Küpeşte / Rail Cap): Boyuna pürüzsüz akış, kenarlarda 3D pah ışıltısı
+        setFaceUV(2, 0, 0,  repLen, 0,  0, 1,  repLen, 1);
+        // Face 3 (-Y Alt):
+        setFaceUV(3, 0, 0,  repLen, 0,  0, 1,  repLen, 1);
+        // Face 4 (+Z) ve 5 (-Z) Uzun Yan Yüzeyler
+        setFaceUV(4, 0, 1,  repLen, 1,  0, 0,  repLen, 0);
+        setFaceUV(5, 0, 1,  repLen, 1,  0, 0,  repLen, 0);
+        // Face 0 (+X) ve 1 (-X) Kısa Uç Kapaklar
+        setFaceUV(0, 0, 1, 1, 1, 0, 0, 1, 0);
+        setFaceUV(1, 0, 1, 1, 1, 0, 0, 1, 0);
+      }
+      geo.attributes.uv.needsUpdate = true;
+    }
+
     function addWall(x, y, z, w, h, d) {
       // Duvarın zeminin altına derinlemesine (0.35m aşağıya) uzanması sağlanır.
       // Bu sayede alttan ışık kaçması (peter-panning / light leakage) kesinlikle engellenir!
@@ -997,18 +1105,9 @@
       const visualY = y - extraDepth * 0.5;
 
       const geo = new THREE.BoxGeometry(w, visualH, d);
-      const wallMeshMat = wallMat.clone();
-      wallMeshMat.map = woodTex.clone();
-      wallMeshMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
-      const length = Math.max(w, d);
-      wallMeshMat.map.repeat.set(Math.max(1, Math.round(length * 0.7)), 1);
-      wallMeshMat.map.needsUpdate = true;
-      // Z-fighting ve zemin sızıntılarını donanımsal olarak engelleyen derinlik önceliği
-      wallMeshMat.polygonOffset = true;
-      wallMeshMat.polygonOffsetFactor = -1.0;
-      wallMeshMat.polygonOffsetUnits = -2.0;
+      setupWallUVs(geo, w, visualH, d);
 
-      const mesh = new THREE.Mesh(geo, wallMeshMat);
+      const mesh = new THREE.Mesh(geo, wallMaterials);
       mesh.position.set(x, visualY, z);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
@@ -1097,7 +1196,9 @@
       post.castShadow = true;
       pivot.add(post);
 
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.2), woodMat);
+      const armGeo = new THREE.BoxGeometry(2.4, 0.35, 0.2);
+      setupWallUVs(armGeo, 2.4, 0.35, 0.2);
+      const arm = new THREE.Mesh(armGeo, wallMaterials);
       arm.position.y = 0.25;
       arm.castShadow = true;
       pivot.add(arm);
@@ -1217,10 +1318,11 @@
       // Cup at (0, 0.1, 6.5) - Deliğin önü, arkası ve çevresi %100 yemyeşil zeminle kaplıdır!
       addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
 
-      addWall(-1.92, 0.35, 0, 0.26, 0.7, 16.4);
-      addWall(1.92, 0.35, 0, 0.26, 0.7, 16.4);
-      addWall(0, 0.35, -8.12, 4.0, 0.7, 0.26);
-      addWall(0, 0.35, 8.12, 4.0, 0.7, 0.26);
+      // Duvarların köşe birleşimleri tam gönyeli (Butt Joint) yapılmıştır - Sıfır Z-fighting
+      addWall(-1.92, 0.35, 0, 0.26, 0.7, 16.5);
+      addWall(1.92, 0.35, 0, 0.26, 0.7, 16.5);
+      addWall(0, 0.35, -8.12, 3.58, 0.7, 0.26);
+      addWall(0, 0.35, 8.12, 3.58, 0.7, 0.26);
 
       // Sand Trap on the right
       addSand(1.0, 0.1, 2.5, 1.3, 3.0);
@@ -1233,14 +1335,14 @@
     function buildHole2() {
       // Sol koridor (z: -7.0 to 0.8, x: -5.2 to -1.8) -> Çakışmasız tam sınır
       addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
-      addWall(-5.22, 0.35, -1.5, 0.26, 0.7, 11.5);
-      addWall(-3.5, 0.35, -7.12, 3.84, 0.7, 0.26);
-      addWall(-1.78, 0.35, -3.0, 0.26, 0.7, 8.3);
+      addWall(-5.22, 0.35, -1.45, 0.26, 0.7, 11.6);
+      addWall(-3.5, 0.35, -7.12, 3.18, 0.7, 0.26);
+      addWall(-1.78, 0.35, -3.12, 0.26, 0.7, 7.74);
 
       // Orta dönüş koridoru (z: 0.8 to 4.2, x: -5.2 to +5.2)
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
       addWall(-1.6, 0.35, 4.22, 7.45, 0.7, 0.28);
-      addWall(0, 0.35, 0.88, 3.84, 0.7, 0.26);
+      addWall(-0.13, 0.35, 0.88, 3.56, 0.7, 0.26);
 
       // Rotating Windmill obstacle in the corner!
       addRotor(0.5, 0.1, 2.5);
@@ -1251,18 +1353,18 @@
       // Sağ Fairway (Cup at 3.5, 0.1, 7.5) - Önü, arkası ve çevresi %100 yemyeşil zemin!
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
 
-      addWall(5.22, 0.35, 5.25, 0.26, 0.7, 9.2);
-      addWall(1.78, 0.35, 6.85, 0.26, 0.7, 5.8);
-      addWall(3.5, 0.35, 9.62, 3.84, 0.7, 0.26);
+      addWall(5.22, 0.35, 5.25, 0.26, 0.7, 9.0);
+      addWall(1.78, 0.35, 6.85, 0.26, 0.7, 5.4);
+      addWall(3.5, 0.35, 9.62, 3.18, 0.7, 0.26);
     }
 
     // --- Hole 3 (Pürüzsüz Eğimli Rampa & Hollow 3D Sunken Cup) ---
     function buildHole3() {
       // 1. Lower fairway
       addFloor(0, 0, -4, 3.8, 0.2, 7.0);
-      addWall(-2.02, 0.35, -4, 0.26, 0.7, 7.4);
-      addWall(2.02, 0.35, -4, 0.26, 0.7, 7.4);
-      addWall(0, 0.35, -7.62, 4.4, 0.7, 0.26);
+      addWall(-2.02, 0.35, -3.95, 0.26, 0.7, 7.5);
+      addWall(2.02, 0.35, -3.95, 0.26, 0.7, 7.5);
+      addWall(0, 0.35, -7.62, 3.78, 0.7, 0.26);
 
       // 2. Gentle Incline Ramp
       const ramp = addFloor(0, 0.275, 2.0, 3.8, 0.2, 5.1);
@@ -1278,7 +1380,7 @@
 
       addWall(-2.42, 0.95, 7.45, 0.26, 0.9, 6.6);
       addWall(2.42, 0.95, 7.45, 0.26, 0.9, 6.6);
-      addWall(0, 1.05, 10.65, 5.2, 1.1, 0.28);
+      addWall(0, 1.05, 10.65, 4.58, 1.1, 0.28);
 
       addWall(-2.2, 0.95, 4.35, 0.52, 0.9, 0.26);
       addWall(2.2, 0.95, 4.35, 0.52, 0.9, 0.26);
@@ -1443,7 +1545,7 @@
       const activeCount = Math.min(Math.max(Math.floor(powerRatio * 9.9) + 1, 1), maxBars);
       const aimAngle = Math.atan2(aimDir.x, aimDir.z);
       const spacing = 0.28 + powerRatio * 0.14;
-      const animPhase = clock.getElapsedTime() * 7.5;
+      const animPhase = gameElapsedTime * 7.5;
 
       for (let i = 0; i < maxBars; i++) {
         if (i < activeCount) {
@@ -1682,15 +1784,16 @@
       return true;
     }
 
-    // --- Physics Simulation Loop ---
-    const clock = new THREE.Clock();
+    // --- Physics Simulation Loop (Monotonic High-Precision Timing) ---
+    let lastAnimTime = 0;
+    let gameElapsedTime = 0;
 
     function updatePhysics(dt) {
       if (dt > 0.05) dt = 0.05;
 
-      // Rotate windmill rotors
+      // Rotate windmill rotors (Kesintisiz, sabit ve pürüzsüz dönüş)
       rotatingBars.forEach(r => {
-        r.pivot.rotation.y += r.speed * dt;
+        r.pivot.rotation.y = (r.pivot.rotation.y + r.speed * dt) % (Math.PI * 2);
       });
 
       // Top dururken dönen tahta topa çarparsa topu hareketlendir
@@ -1922,9 +2025,18 @@
     }
 
     // --- Render Loop ---
-    function animate() {
+    function animate(timestamp) {
       requestAnimationFrame(animate);
-      const dt = clock.getDelta();
+      if (!lastAnimTime) lastAnimTime = timestamp || performance.now();
+      const now = timestamp || performance.now();
+      let dt = (now - lastAnimTime) / 1000;
+      lastAnimTime = now;
+
+      // Delta time sınırlandırma (Dönen engellerde ve fizik adımlarında mikro-duraklamaları kesinlikle engeller)
+      if (dt > 0.05) dt = 0.05;
+      if (dt <= 0.0001) dt = 0.016;
+      gameElapsedTime += dt;
+
       updatePhysics(dt);
       ballMesh.position.copy(ballPos);
 
@@ -1950,7 +2062,7 @@
       if (!isMoving && !isInHole && interactionMode !== 'SLINGSHOT') {
         ballRing.visible = true;
         ballRing.position.set(ballPos.x, ballPos.y - ballRadius + 0.015, ballPos.z);
-        ballRingMat.opacity = 0.45 + 0.25 * Math.sin(clock.getElapsedTime() * 4.0);
+        ballRingMat.opacity = 0.45 + 0.25 * Math.sin(gameElapsedTime * 4.0);
       } else {
         ballRing.visible = false;
       }
