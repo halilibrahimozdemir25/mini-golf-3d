@@ -704,88 +704,100 @@
     ballShadow.rotation.x = -Math.PI / 2;
     scene.add(ballShadow);
 
-    // --- Professional 3D Dynamic Arrow Indicator System ---
+    // --- Modern Aerodynamic Aiming Reticle System ---
     const aim3DGroup = new THREE.Group();
     scene.add(aim3DGroup);
 
-    function createChevronShape() {
+    function createSleekChevronShape() {
       const s = new THREE.Shape();
       s.moveTo(0, 0.22);
-      s.lineTo(0.15, 0.0);
-      s.lineTo(0.09, -0.05);
-      s.lineTo(0, 0.07);
-      s.lineTo(-0.09, -0.05);
-      s.lineTo(-0.15, 0.0);
+      s.lineTo(0.14, -0.05);
+      s.quadraticCurveTo(0.09, -0.01, 0, 0.08);
+      s.quadraticCurveTo(-0.09, -0.01, -0.14, -0.05);
+      s.lineTo(0, 0.22);
       s.closePath();
       return s;
     }
 
-    function createArrowheadShape() {
+    function createSleekArrowheadShape() {
       const s = new THREE.Shape();
-      s.moveTo(0, 0.36);
-      s.lineTo(0.22, 0.0);
-      s.lineTo(0.08, 0.0);
-      s.lineTo(0.08, -0.08);
-      s.lineTo(-0.08, -0.08);
-      s.lineTo(-0.08, 0.0);
-      s.lineTo(-0.22, 0.0);
+      s.moveTo(0, 0.32);
+      s.lineTo(0.18, -0.06);
+      s.lineTo(0.06, -0.02);
+      s.lineTo(0.06, -0.12);
+      s.lineTo(0, -0.05);
+      s.lineTo(-0.06, -0.12);
+      s.lineTo(-0.06, -0.02);
+      s.lineTo(-0.18, -0.06);
       s.closePath();
       return s;
     }
 
-    const chevronGeo = new THREE.ExtrudeGeometry(createChevronShape(), {
-      depth: 0.02,
+    const chevronGeo = new THREE.ExtrudeGeometry(createSleekChevronShape(), {
+      depth: 0.014,
       bevelEnabled: true,
-      bevelThickness: 0.005,
-      bevelSize: 0.005,
+      bevelThickness: 0.003,
+      bevelSize: 0.003,
       bevelSegments: 2
     });
-    chevronGeo.rotateX(Math.PI / 2); // Topun gidiş yönüne (hedefe doğru) baksın!
+    chevronGeo.rotateX(Math.PI / 2); // Topun gidiş yönüne baksın
 
-    const arrowheadGeo = new THREE.ExtrudeGeometry(createArrowheadShape(), {
-      depth: 0.025,
+    const arrowheadGeo = new THREE.ExtrudeGeometry(createSleekArrowheadShape(), {
+      depth: 0.018,
       bevelEnabled: true,
-      bevelThickness: 0.007,
-      bevelSize: 0.007,
+      bevelThickness: 0.004,
+      bevelSize: 0.004,
       bevelSegments: 2
     });
-    arrowheadGeo.rotateX(Math.PI / 2); // Topun gidiş yönüne baksın!
+    arrowheadGeo.rotateX(Math.PI / 2);
+
+    const pipGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.008, 16);
 
     const aimChevrons = [];
-    const maxChevrons = 9;
+    const aimPips = [];
+    const maxChevrons = 10;
     for (let i = 0; i < maxChevrons; i++) {
       const mat = new THREE.MeshStandardMaterial({
-        color: 0x00ff77,
-        roughness: 0.2,
-        metalness: 0.1,
-        emissive: 0x00dd55,
-        emissiveIntensity: 0.6
+        color: 0x00f576,
+        roughness: 0.22,
+        metalness: 0.15,
+        emissive: 0x00d060,
+        emissiveIntensity: 0.65,
+        transparent: true,
+        opacity: 0.95
       });
       const mesh = new THREE.Mesh(chevronGeo, mat);
       mesh.visible = false;
       aim3DGroup.add(mesh);
       aimChevrons.push(mesh);
+
+      const pipMat = new THREE.MeshStandardMaterial({
+        color: 0x00f576,
+        roughness: 0.2,
+        metalness: 0.1,
+        emissive: 0x00d060,
+        emissiveIntensity: 0.7,
+        transparent: true,
+        opacity: 0.85
+      });
+      const pipMesh = new THREE.Mesh(pipGeo, pipMat);
+      pipMesh.visible = false;
+      aim3DGroup.add(pipMesh);
+      aimPips.push(pipMesh);
     }
 
     const arrowheadMat = new THREE.MeshStandardMaterial({
-      color: 0x00ff77,
-      roughness: 0.2,
-      metalness: 0.1,
-      emissive: 0x00dd55,
-      emissiveIntensity: 0.7
+      color: 0x00f576,
+      roughness: 0.18,
+      metalness: 0.2,
+      emissive: 0x00d060,
+      emissiveIntensity: 0.85,
+      transparent: true,
+      opacity: 0.98
     });
     const arrowheadMesh = new THREE.Mesh(arrowheadGeo, arrowheadMat);
     arrowheadMesh.visible = false;
     aim3DGroup.add(arrowheadMesh);
-
-    // Slingshot Pull Band
-    const bandGeo = new THREE.BufferGeometry();
-    const bandPositions = new Float32Array(9);
-    bandGeo.setAttribute('position', new THREE.BufferAttribute(bandPositions, 3));
-    const bandMat = new THREE.LineBasicMaterial({ color: 0x00ff77, linewidth: 3, transparent: true, opacity: 0.85 });
-    const bandLine = new THREE.Line(bandGeo, bandMat);
-    bandLine.visible = false;
-    scene.add(bandLine);
 
     // Glowing Touch Ring around Ball (Clean emerald green glow - No white!)
     const ballRingGeo = new THREE.RingGeometry(0.18, 0.24, 32);
@@ -1393,82 +1405,108 @@
     window.addEventListener('touchmove', onPointerMove, { passive: false });
     window.addEventListener('touchend', onPointerUp, { passive: true });
 
+    function getAimColor(t) {
+      const clampedT = Math.max(0, Math.min(1, t));
+      let r, g, b, er, eg, eb;
+      if (clampedT < 0.5) {
+        const k = clampedT / 0.5;
+        r = Math.round(0 + k * 255);
+        g = Math.round(245 - k * 50);
+        b = Math.round(120 - k * 120);
+        er = Math.round(0 + k * 230);
+        eg = Math.round(210 - k * 50);
+        eb = Math.round(80 - k * 80);
+      } else {
+        const k = (clampedT - 0.5) / 0.5;
+        r = 255;
+        g = Math.round(195 - k * 165);
+        b = Math.round(0 + k * 75);
+        er = 255;
+        eg = Math.round(160 - k * 145);
+        eb = Math.round(0 + k * 60);
+      }
+      const hex = (r << 16) | (g << 8) | b;
+      const emissiveHex = (er << 16) | (eg << 8) | eb;
+      const hexStr = '#' + hex.toString(16).padStart(6, '0');
+      return { hex, emissiveHex, hexStr };
+    }
+
     function updateAimVisuals() {
       aim3DGroup.visible = true;
-      bandLine.visible = true;
       powerBadge.style.display = 'block';
 
-      // Renk geçişi: Düşük güçte Canlı Yeşil -> Orta güçte Elektrik Sarısı -> Yüksek güçte Ateş Kırmızısı
-      let colorHex = 0x00ff77;
-      let emissiveHex = 0x00dd55;
-      if (powerRatio > 0.65) {
-        colorHex = 0xff2835;
-        emissiveHex = 0xee1520;
-      } else if (powerRatio > 0.30) {
-        colorHex = 0xffd214;
-        emissiveHex = 0xddaa00;
-      }
-
-      // Çektikçe artan 3D Chevron Oklar (1'den 9'a kadar dinamik artış)
-      const activeCount = Math.min(Math.max(Math.floor(powerRatio * 9) + 1, 1), 9);
+      const aimCol = getAimColor(powerRatio);
+      const activeCount = Math.min(Math.max(Math.floor(powerRatio * 9) + 1, 1), maxChevrons);
       const aimAngle = Math.atan2(aimDir.x, aimDir.z);
-      const spacing = 0.36 + powerRatio * 0.22;
-      const groundSurfaceY = ballPos.y - ballRadius + 0.012;
+      const spacing = 0.38 + powerRatio * 0.22;
+      const animPhase = clock.getElapsedTime() * 7.0;
 
       for (let i = 0; i < maxChevrons; i++) {
         if (i < activeCount) {
-          const chevronDist = 0.35 + (i + 1) * spacing;
-          aimChevrons[i].position.set(
-            ballPos.x + aimDir.x * chevronDist,
-            groundSurfaceY,
-            ballPos.z + aimDir.z * chevronDist
-          );
+          const dist = 0.34 + (i + 1) * spacing;
+          const targetX = ballPos.x + aimDir.x * dist;
+          const targetZ = ballPos.z + aimDir.z * dist;
+          const surfaceY = (getGroundHeight(targetX, targetZ, ballPos.y - ballRadius) ?? (ballPos.y - ballRadius)) + 0.012;
+
+          aimChevrons[i].position.set(targetX, surfaceY, targetZ);
           aimChevrons[i].rotation.y = aimAngle;
-          aimChevrons[i].material.color.setHex(colorHex);
-          aimChevrons[i].material.emissive.setHex(emissiveHex);
+
+          const scaleProg = 0.85 + (i / maxChevrons) * 0.25;
+          aimChevrons[i].scale.set(scaleProg, scaleProg, scaleProg);
+
+          // Pürüzsüz ileriye doğru akan enerji nabzı (Flow wave pulse)
+          const wave = 0.75 + 0.30 * Math.sin(animPhase - i * 0.75);
+          aimChevrons[i].material.color.setHex(aimCol.hex);
+          aimChevrons[i].material.emissive.setHex(aimCol.emissiveHex);
+          aimChevrons[i].material.emissiveIntensity = 0.55 * wave + powerRatio * 0.25;
           aimChevrons[i].visible = true;
+
+          // Oklar arasındaki lazer rehber noktacıkları
+          if (aimPips[i]) {
+            const pipDist = dist - spacing * 0.5;
+            const pipX = ballPos.x + aimDir.x * pipDist;
+            const pipZ = ballPos.z + aimDir.z * pipDist;
+            const pipY = (getGroundHeight(pipX, pipZ, ballPos.y - ballRadius) ?? (ballPos.y - ballRadius)) + 0.010;
+            aimPips[i].position.set(pipX, pipY, pipZ);
+            aimPips[i].material.color.setHex(aimCol.hex);
+            aimPips[i].material.emissive.setHex(aimCol.emissiveHex);
+            aimPips[i].material.emissiveIntensity = 0.60 * wave;
+            aimPips[i].visible = true;
+          }
         } else {
           aimChevrons[i].visible = false;
+          if (aimPips[i]) aimPips[i].visible = false;
         }
       }
 
-      // En uçtaki 3 Boyutlu Ana Ok Ucu
-      const tipDist = 0.35 + (activeCount + 1) * spacing;
-      arrowheadMesh.position.set(
-        ballPos.x + aimDir.x * tipDist,
-        groundSurfaceY,
-        ballPos.z + aimDir.z * tipDist
-      );
+      // En uçtaki aerodinamik ana ok ucu
+      const tipDist = 0.34 + (activeCount + 1) * spacing;
+      const tipX = ballPos.x + aimDir.x * tipDist;
+      const tipZ = ballPos.z + aimDir.z * tipDist;
+      const tipY = (getGroundHeight(tipX, tipZ, ballPos.y - ballRadius) ?? (ballPos.y - ballRadius)) + 0.014;
+
+      arrowheadMesh.position.set(tipX, tipY, tipZ);
       arrowheadMesh.rotation.y = aimAngle;
-      arrowheadMesh.material.color.setHex(colorHex);
-      arrowheadMesh.material.emissive.setHex(emissiveHex);
+      const tipScale = 1.0 + powerRatio * 0.20;
+      arrowheadMesh.scale.set(tipScale, tipScale, tipScale);
+      arrowheadMesh.material.color.setHex(aimCol.hex);
+      arrowheadMesh.material.emissive.setHex(aimCol.emissiveHex);
+      arrowheadMesh.material.emissiveIntensity = 0.85 + powerRatio * 0.35;
       arrowheadMesh.visible = true;
 
-      // Topun arkasındaki 3D elastik sapan çekiş bandı
-      const startPos = ballPos.clone().add(new THREE.Vector3(0, 0.02, 0));
-      const bandPosAttr = bandLine.geometry.attributes.position;
-      const left = startPos.clone().addScaledVector(aimDir, -0.15).add(new THREE.Vector3(-aimDir.z, 0, aimDir.x).multiplyScalar(0.24));
-      const right = startPos.clone().addScaledVector(aimDir, -0.15).add(new THREE.Vector3(aimDir.z, 0, -aimDir.x).multiplyScalar(0.24));
-      const pull = startPos.clone().addScaledVector(aimDir, -(0.25 + powerRatio * 0.7));
-
-      bandPosAttr.setXYZ(0, left.x, left.y, left.z);
-      bandPosAttr.setXYZ(1, pull.x, pull.y, pull.z);
-      bandPosAttr.setXYZ(2, right.x, right.y, right.z);
-      bandPosAttr.needsUpdate = true;
-      bandMat.color.setHex(colorHex);
-
-      // Güç Rozeti
+      // Güç Rozeti (Dinamik gradient rengi ve yumuşak neon ışıltısı)
       const pct = Math.round(powerRatio * 100);
       powerBadge.innerText = `%${pct} GÜÇ`;
-      powerBadge.style.borderColor = '#' + colorHex.toString(16).padStart(6, '0');
+      powerBadge.style.borderColor = aimCol.hexStr;
+      powerBadge.style.boxShadow = `0 4px 20px ${aimCol.hexStr}55`;
     }
 
     function hideAimVisuals() {
       aim3DGroup.visible = false;
-      bandLine.visible = false;
       powerBadge.style.display = 'none';
       for (let i = 0; i < maxChevrons; i++) {
         aimChevrons[i].visible = false;
+        if (aimPips[i]) aimPips[i].visible = false;
       }
       arrowheadMesh.visible = false;
     }
@@ -1896,6 +1934,11 @@
         ballRingMat.opacity = 0.45 + 0.25 * Math.sin(clock.getElapsedTime() * 4.0);
       } else {
         ballRing.visible = false;
+      }
+
+      // Nişan alma anında akıcı ve canlı enerji nabzı animasyonu
+      if (interactionMode === 'SLINGSHOT' && powerRatio > 0) {
+        updateAimVisuals();
       }
 
       updateCamera(dt);
