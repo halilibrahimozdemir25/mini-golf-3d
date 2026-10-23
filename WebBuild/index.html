@@ -373,27 +373,27 @@
     sunLight.shadow.normalBias = 0.02;
     scene.add(sunLight);
 
-    // Background Surrounding Ground (Deep dark forest rough grass)
+    // Background Surrounding Ground (Lush Golf Battle Course Outskirts)
     const bgGeo = new THREE.PlaneGeometry(140, 140);
-    const bgMat = new THREE.MeshStandardMaterial({ color: 0x062810, roughness: 0.95, metalness: 0.02 });
+    const bgMat = new THREE.MeshStandardMaterial({ color: 0x16661e, roughness: 0.95, metalness: 0.02 });
     const bgPlane = new THREE.Mesh(bgGeo, bgMat);
     bgPlane.rotation.x = -Math.PI / 2;
     bgPlane.position.y = -0.15;
     bgPlane.receiveShadow = true;
     scene.add(bgPlane);
 
-    // --- Golf Battle Tarzı Şampiyona Koyu Yeşil Damalı Zemin (Büyük Kareler, Sıfır Titreme) ---
+    // --- Golf Battle Birebir Şampiyona Damalı Çim Dokusu (Golf Battle Renk & Desenleri) ---
     function createGolfGrassTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Golf Battle tarzı derin, zengin koyu turnuva yeşili renk paleti
-      const cDark = '#093f1b';  // Derin zengin koyu yeşil
-      const cLight = '#0f5424'; // Kontrastlı şık zümrüt koyu yeşil
+      // Golf Battle orijinal renk paleti (Canlı, parlak ve zengin şampiyona yeşilleri):
+      const cDark = '#187822';  // Koyu zümrüt çim karesi
+      const cLight = '#24a22e'; // Açık canlı çim karesi
 
-      // 4 Büyük Çeyrek Kare (256x256 her biri - Dünya ölçeğinde ~1 metre büyüklüğünde)
+      // 4 Büyük Çeyrek Kare (256x256 her biri - Golf Battle ölçeğinde)
       ctx.fillStyle = cDark;
       ctx.fillRect(0, 0, 256, 256);
       ctx.fillRect(256, 256, 256, 256);
@@ -402,19 +402,19 @@
       ctx.fillRect(256, 0, 256, 256);
       ctx.fillRect(0, 256, 256, 256);
 
-      // Kadifemsi Çim Dikiş Gölgeleri (Büyük karelerin kenarlarında pürüzsüz mowed-lawn derinliği)
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-      ctx.fillRect(253, 0, 6, 512);
-      ctx.fillRect(0, 253, 512, 6);
+      // Golf Battle tarzı şık çim biçme sınır çizgileri (Mowed-lawn bordür)
+      ctx.fillStyle = 'rgba(12, 60, 20, 0.20)';
+      ctx.fillRect(254, 0, 4, 512);
+      ctx.fillRect(0, 254, 512, 4);
 
-      // Pürüzsüz doğal kadife çim mikro-dokusu (Asla moiré/dalgalanma yapmaz, her açıdan nettir)
+      // Pürüzsüz doğal kadife çim mikro-dokusu
       const imgData = ctx.getImageData(0, 0, 512, 512);
       const data = imgData.data;
       for (let i = 0; i < data.length; i += 4) {
-        const noise = (Math.random() - 0.5) * 8;
-        data[i] = Math.min(255, Math.max(0, data[i] + noise * 0.4));
-        data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise * 0.8));
-        data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise * 0.4));
+        const noise = (Math.random() - 0.5) * 6;
+        data[i] = Math.min(255, Math.max(0, data[i] + noise * 0.3));
+        data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise * 0.6));
+        data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise * 0.3));
       }
       ctx.putImageData(imgData, 0, 0);
 
@@ -929,22 +929,24 @@
       camera.updateMatrixWorld(true);
     }
 
+    // Dünya koordinatlı dikişsiz UV haritalama (Tüm bölümler ve tüm zemin parçaları 100% aynı hizalı)
+    function applyWorldUVs(geo, meshX, meshZ, scale = 1.8) {
+      const pos = geo.attributes.position;
+      const count = pos.count;
+      const uvs = new Float32Array(count * 2);
+      for (let i = 0; i < count; i++) {
+        const wx = pos.getX(i) + meshX;
+        const wz = pos.getZ(i) + meshZ;
+        uvs[i * 2] = wx / scale;
+        uvs[i * 2 + 1] = wz / scale;
+      }
+      geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    }
+
     function addFloor(x, y, z, w, h, d, mat = null) {
       const geo = new THREE.BoxGeometry(w, h, d);
-      let floorMat = mat;
-      if (!floorMat) {
-        // Golf Battle tarzı büyük damalı şampiyona çimi (Her kare ~1.0m)
-        floorMat = grassMat.clone();
-        floorMat.map = grassTex.clone();
-        floorMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
-        floorMat.map.generateMipmaps = true;
-        floorMat.map.minFilter = THREE.LinearMipmapLinearFilter;
-        floorMat.map.magFilter = THREE.LinearFilter;
-        const repX = Math.max(1, Math.round(w / 2.0));
-        const repZ = Math.max(1, Math.round(d / 2.0));
-        floorMat.map.repeat.set(repX, repZ);
-        floorMat.map.needsUpdate = true;
-      }
+      applyWorldUVs(geo, x, z, 1.8);
+      const floorMat = mat || grassMat;
       const mesh = new THREE.Mesh(geo, floorMat);
       mesh.position.set(x, y, z);
       mesh.receiveShadow = true;
@@ -976,17 +978,9 @@
       geo.rotateX(-Math.PI / 2);
       geo.translate(0, -h * 0.5, 0);
 
-      const floorMat = grassMat.clone();
-      floorMat.map = grassTex.clone();
-      floorMat.map.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
-      floorMat.map.generateMipmaps = true;
-      floorMat.map.minFilter = THREE.LinearMipmapLinearFilter;
-      floorMat.map.magFilter = THREE.LinearFilter;
-      const repX = Math.max(1, Math.round(w / 2.0));
-      const repZ = Math.max(1, Math.round(d / 2.0));
-      floorMat.map.repeat.set(repX, repZ);
-      floorMat.map.needsUpdate = true;
+      applyWorldUVs(geo, x, z, 1.8);
 
+      const floorMat = grassMat;
       const mesh = new THREE.Mesh(geo, floorMat);
       mesh.position.set(x, y, z);
       mesh.receiveShadow = true;
