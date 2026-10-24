@@ -2210,7 +2210,13 @@
         ballPos.z += ballVel.z * subDt;
 
         // Dikey Fizik, Eğim ve Zıplama Kontrolü
-        if (isAirborne) {
+        const distToCup2D = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
+        if (distToCup2D < 0.42) {
+          // Deliğin tam ağzında (3D oyuk kupa üzerinde): Top deliğin yüzey kotunda tutulur, asla boşlukta/havada sayılmaz!
+          ballPos.y = holeCupPos.y + ballRadius;
+          ballVel.y = 0;
+          isAirborne = false;
+        } else if (isAirborne) {
           // Gerçekçi yerçekimi (11.5 m/s²: doğal parabolik balistik eğri)
           ballVel.y -= 11.5 * subDt;
           ballPos.y += ballVel.y * subDt;
@@ -2342,12 +2348,13 @@
       toCup.y = 0;
       const cupDist = toCup.length();
 
-      if (!isAirborne && cupDist < 0.45) {
-        ballVel.addScaledVector(toCup.normalize(), 8.0 * dt);
-        if (cupDist < 0.20 && ballVel.length() < 14.0) {
+      if (cupDist < 0.48) {
+        ballVel.addScaledVector(toCup.normalize(), 9.0 * dt);
+        if (cupDist < 0.22 && ballVel.length() < 14.0) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
+          isAirborne = false;
           sinkFallVel = 0;
           playHoleIn();
           setTimeout(showHoleModal, 900);
@@ -2356,9 +2363,12 @@
       }
 
       // 4. Kanyon Düşüşü & Parkur Dışı (Game Over) Algılama
-      if (ballPos.y < -1.8 || Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
-        triggerGameOver();
-        return;
+      // Top deliğe girmişse veya deliğe batıyorsa ASLA Game Over tetiklenemez!
+      if (!isInHole && !isSinking) {
+        if (ballPos.y < -1.8 || Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
+          triggerGameOver();
+          return;
+        }
       }
 
       // Topun Tamamen Durması
