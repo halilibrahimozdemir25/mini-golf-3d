@@ -990,6 +990,7 @@
     let isMoving = false;
     let isInHole = false;
     let isSinking = false;
+    let isAirborne = false;
     let sinkFallVel = 0;
     let ballPos = new THREE.Vector3(0, 0.22, -6);
     let ballVel = new THREE.Vector3(0, 0, 0);
@@ -1072,7 +1073,7 @@
         name: "9. Tramplin Uçurumu & Atlama",
         par: 4,
         spawn: new THREE.Vector3(0, 0.22, -6.5),
-        cup: new THREE.Vector3(0, 0.65, 10.5)
+        cup: new THREE.Vector3(0, 0.65, 9.5)
       },
       {
         name: "10. Şampiyonlar Zirvesi",
@@ -1105,6 +1106,7 @@
       isMoving = false;
       isInHole = false;
       isSinking = false;
+      isAirborne = false;
       sinkFallVel = 0;
       strokes = 0;
       updateHUD();
@@ -1329,7 +1331,7 @@
     }
 
     // --- Dinamik Tramplin / Zıplama Rampası (Jump Ramp) ---
-    function addJumpRamp(x, y, z, w, h, d, pitch, boost = 7.0) {
+    function addJumpRamp(x, y, z, w, h, d, pitch) {
       const ramp = addFloor(x, y, z, w, h, d);
       ramp.rotation.x = pitch;
       ramp.updateMatrixWorld(true);
@@ -1344,8 +1346,7 @@
         z: z,
         halfW: w * 0.5,
         halfD: d * 0.5,
-        pitch: pitch,
-        boost: boost
+        pitch: pitch
       });
       return ramp;
     }
@@ -1673,21 +1674,26 @@
       addWall(-2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
       addWall(2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
       addWall(0, 0.35, -7.62, 3.98, 0.7, 0.26);
-      // Dik kalkış tramplini: topu havaya fırlatır!
-      addJumpRamp(0, 0.28, -0.8, 3.8, 0.2, 3.4, -0.20, 7.5);
-      // z: 0.9 ile 4.8 arası BOŞLUK (Açık kanyon - top havada uçar!)
+
+      // Dik kalkış tramplini: Giriş kotu zeminle 100% sıfır birleşir, lip kotu 1.04m'ye yükselir
+      addJumpRamp(0, 0.47, -0.8, 3.8, 0.2, 3.4, -0.28);
+
+      // z: 0.9 ile 3.0 arası BOŞLUK (Açık kanyon - top momentumuyla havada uçar!)
       // Karşıdaki yüksek ada yeşillik
-      addFloor(0, 0.65, 6.5, 5.2, 0.2, 3.4);
-      addIce(0, 0.65, 6.5, 4.0, 2.2);
-      addWall(-2.72, 1.05, 6.5, 0.26, 1.0, 3.6);
-      addWall(2.72, 1.05, 6.5, 0.26, 1.0, 3.6);
+      addFloor(0, 0.65, 5.0, 5.2, 0.2, 4.0);
+      addIce(0, 0.65, 5.0, 4.0, 2.5);
+
       // Kupa alanı
-      addFloorWithCupHole(0, 0.65, 10.0, 5.2, 0.2, 3.8, 0, 10.5, 0.21);
-      addWall(-2.72, 1.05, 10.0, 0.26, 1.0, 4.0);
-      addWall(2.72, 1.05, 10.0, 0.26, 1.0, 4.0);
-      addWall(0, 1.15, 12.02, 5.18, 1.2, 0.28);
-      addBumper(-1.5, 0.65, 8.8, 0.40);
-      addBumper(1.5, 0.65, 8.8, 0.40);
+      addFloorWithCupHole(0, 0.65, 9.0, 5.2, 0.2, 4.0, 0, 9.5, 0.21);
+
+      // Ada duvarları: Doğal alçak korkuluklar (h: 0.60, kot: 0.80 -> çimden 0.35m yüksekte)
+      // Bu sayede aşırı hızlı atışlar gerçeğe uygun şekilde pistten çıkıp kanyona uçar!
+      addWall(-2.72, 0.80, 7.0, 0.26, 0.60, 8.2);
+      addWall(2.72, 0.80, 7.0, 0.26, 0.60, 8.2);
+      addWall(0, 0.80, 11.12, 5.18, 0.60, 0.26);
+
+      addBumper(-1.5, 0.65, 8.0, 0.40);
+      addBumper(1.5, 0.65, 8.0, 0.40);
     }
 
     // --- Hole 10 (10. Şampiyonlar Zirvesi - Grand Finale Usta Parkuru) ---
@@ -1961,6 +1967,7 @@
 
     function shootBall(dir, power) {
       isMoving = true;
+      isAirborne = false;
       strokes++;
       updateHUD();
       lastSafePos.copy(ballPos);
@@ -2173,41 +2180,103 @@
           }
         });
 
-        const curSpd = ballVel.length();
+        const curSpd = Math.hypot(ballVel.x, ballVel.z);
         if (onIce) {
           // Buz üzerinde sıfıra yakın sürtünme + hafif dinamik hızlanma ivmesi
           if (curSpd > 0.4 && curSpd < 22.0) {
-            ballVel.multiplyScalar(Math.pow(1.008, subDt * 60)); // Buzda hızlanır!
+            ballVel.x *= Math.pow(1.008, subDt * 60);
+            ballVel.z *= Math.pow(1.008, subDt * 60);
           } else {
-            ballVel.multiplyScalar(Math.pow(0.998, subDt * 60)); // Minimum sürtünme
+            ballVel.x *= Math.pow(0.998, subDt * 60);
+            ballVel.z *= Math.pow(0.998, subDt * 60);
           }
-        } else {
+        } else if (!isAirborne) {
           // Standart çim sürtünmesi: Düşük hızlarda yumuşakça durur, yüksek hızda uzun kayar
           if (curSpd < 2.5) {
-            ballVel.multiplyScalar(Math.pow(0.952, subDt * 60));
+            ballVel.x *= Math.pow(0.952, subDt * 60);
+            ballVel.z *= Math.pow(0.952, subDt * 60);
           } else {
-            ballVel.multiplyScalar(Math.pow(0.974, subDt * 60));
+            ballVel.x *= Math.pow(0.974, subDt * 60);
+            ballVel.z *= Math.pow(0.974, subDt * 60);
           }
+        } else {
+          // Havada uçuş: Minimum hava sürtünmesi (aerodinamik akış)
+          ballVel.x *= Math.pow(0.998, subDt * 60);
+          ballVel.z *= Math.pow(0.998, subDt * 60);
         }
 
-        // Tramplin / Zıplama Rampası İtme Algılama
-        jumpRamps.forEach(jr => {
-          if (Math.abs(ballPos.x - jr.x) <= jr.halfW &&
-              Math.abs(ballPos.z - jr.z) <= jr.halfD) {
-            if (ballVel.z > 1.2) {
-              const targetVy = ballVel.z * Math.tan(-jr.pitch) + jr.boost * 0.42;
-              ballVel.y = Math.max(ballVel.y, targetVy);
-            }
-          }
-        });
-
-        // Alt adımı ilerlet
+        // Yatay konumu ilerlet
         ballPos.x += ballVel.x * subDt;
         ballPos.z += ballVel.z * subDt;
 
-        if (ballVel.y !== 0) {
+        // Dikey Fizik, Eğim ve Zıplama Kontrolü
+        if (isAirborne) {
+          // Gerçekçi yerçekimi (11.5 m/s²: doğal parabolik balistik eğri)
+          ballVel.y -= 11.5 * subDt;
           ballPos.y += ballVel.y * subDt;
-          ballVel.y -= 22.0 * subDt; // Yerçekimi
+
+          // Havada süzülürken zemine iniş kontrolü (SADECE iniş halindeyken ballVel.y <= 0)
+          if (ballVel.y <= 0) {
+            const landingGroundY = getGroundHeight(ballPos.x, ballPos.z);
+            if (landingGroundY !== null) {
+              const expectedY = landingGroundY + ballRadius;
+              if (ballPos.y <= expectedY + 0.04 && ballPos.y >= expectedY - 0.35) {
+                ballPos.y = expectedY;
+                lastGroundY = landingGroundY;
+                if (ballVel.y < -3.2) {
+                  ballVel.y = -ballVel.y * 0.26; // Gerçekçi çim sekmesi
+                  playBounce();
+                } else {
+                  ballVel.y = 0;
+                  isAirborne = false;
+                }
+              }
+            }
+          }
+        } else {
+          // Top zeminde yuvarlanıyor: Yüksekliği doğrudan zemine kenetle
+          const groundY = getGroundHeight(ballPos.x, ballPos.z);
+          if (groundY !== null) {
+            ballPos.y = groundY + ballRadius;
+            ballVel.y = 0;
+            lastGroundY = groundY;
+
+            // Rampa ve eğim fiziği: Yokuş yukarı yavaşlar, iniş aşağı hızlanır
+            if (curSpd > 0.05) {
+              const dirX = ballVel.x / curSpd;
+              const dirZ = ballVel.z / curSpd;
+              const aheadDist = 0.12;
+              const aheadGroundY = getGroundHeight(ballPos.x + dirX * aheadDist, ballPos.z + dirZ * aheadDist);
+              if (aheadGroundY !== null && Math.abs(aheadGroundY - groundY) < 0.25) {
+                const slope = (aheadGroundY - groundY) / aheadDist;
+                const slopeDecel = 4.5 * slope;
+                ballVel.x -= dirX * slopeDecel * subDt;
+                ballVel.z -= dirZ * slopeDecel * subDt;
+              }
+            }
+          } else {
+            // Zemin bitti (Uçurum, kanyon veya tramplin rampası ucu)
+            isAirborne = true;
+
+            // Tramplin rampasından çıkış yapılıyorsa, topun GERÇEK hızına ve rampa açısına göre zıplama
+            let launchPitch = 0;
+            jumpRamps.forEach(jr => {
+              if (Math.abs(ballPos.x - jr.x) <= jr.halfW + 0.4 &&
+                  Math.abs(ballPos.z - (jr.z + jr.halfD)) <= 0.8) {
+                launchPitch = -jr.pitch;
+              }
+            });
+
+            if (launchPitch > 0) {
+              const fwdSpeed = Math.hypot(ballVel.x, ballVel.z);
+              ballVel.y = fwdSpeed * Math.sin(launchPitch);
+              const cosP = Math.cos(launchPitch);
+              ballVel.x *= cosP;
+              ballVel.z *= cosP;
+            } else {
+              ballVel.y = 0;
+            }
+          }
         }
 
         // Dönen Tahta Engel Çarpışmaları (Aktif fiziksel çarpışma)
@@ -2230,8 +2299,11 @@
           }
         });
 
-        // Duvar Çarpışmaları (Asla duvarın içinden geçemez!)
+        // Duvar Çarpışmaları (Top havadaysa ve duvar üst kotundan yüksekteyse üstünden uçar!)
         colliders.forEach(c => {
+          if (isAirborne && (ballPos.y - ballRadius > c.box.max.y - 0.04)) {
+            return;
+          }
           if (c.box.containsPoint(ballPos)) {
             const center = new THREE.Vector3();
             c.box.getCenter(center);
@@ -2255,13 +2327,14 @@
         });
 
         // Kum Tuzakları (Top kum alanındayken dengeli kum direnci)
-        sandTraps.forEach(s => {
-          if (Math.abs(ballPos.x - s.x) <= s.halfW + ballRadius * 0.4 &&
-              Math.abs(ballPos.z - s.z) <= s.halfD + ballRadius * 0.4) {
-            // Dengeli kum sürtünmesi: 100% güçle rahatça çıkar, zayıf vuruşlar kumda kalır
-            ballVel.multiplyScalar(Math.pow(0.915, subDt * 60));
-          }
-        });
+        if (!isAirborne) {
+          sandTraps.forEach(s => {
+            if (Math.abs(ballPos.x - s.x) <= s.halfW + ballRadius * 0.4 &&
+                Math.abs(ballPos.z - s.z) <= s.halfD + ballRadius * 0.4) {
+              ballVel.multiplyScalar(Math.pow(0.915, subDt * 60));
+            }
+          });
+        }
       }
 
       // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü
@@ -2269,7 +2342,7 @@
       toCup.y = 0;
       const cupDist = toCup.length();
 
-      if (cupDist < 0.45) {
+      if (!isAirborne && cupDist < 0.45) {
         ballVel.addScaledVector(toCup.normalize(), 8.0 * dt);
         if (cupDist < 0.20 && ballVel.length() < 14.0) {
           isSinking = true;
@@ -2282,42 +2355,14 @@
         }
       }
 
-      // 4. Zemin Yüzey Kontrolü, Havada Uçuş & Parkur Dışı (Game Over) Algılama
-      const groundY = getGroundHeight(ballPos.x, ballPos.z);
-      if (groundY !== null) {
-        const expectedY = groundY + ballRadius;
-        if (ballPos.y <= expectedY + 0.05) {
-          // Zemine indi veya zeminde yuvarlanıyor
-          ballPos.y = expectedY;
-          if (ballVel.y < -3.0) {
-            ballVel.y = -ballVel.y * 0.22; // Hafif gerçekçi sekme
-            playBounce();
-          } else {
-            ballVel.y = 0;
-          }
-        }
-      } else if (cupDist < 0.40) {
-        // 3D Çukur kupa ağzının tam üstünde (Doğal çukur seviyesi)
-        ballPos.y = holeCupPos.y + ballRadius;
-        ballVel.y = 0;
-      } else {
-        // Boşlukta / Uçurumda (GAP) hava uçuşu & serbest düşüş
-        ballVel.y -= 22.0 * dt;
-        ballPos.y += ballVel.y * dt;
-        if (ballPos.y < -1.8) {
-          triggerGameOver();
-          return;
-        }
-      }
-
-      // Ekstra güvenlik sınır kontrolü: Parkur dışı koruması (10 bölümün tamamını kapsar)
-      if (Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
+      // 4. Kanyon Düşüşü & Parkur Dışı (Game Over) Algılama
+      if (ballPos.y < -1.8 || Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
         triggerGameOver();
         return;
       }
 
       // Topun Tamamen Durması
-      if (ballVel.length() < 0.18) {
+      if (!isAirborne && ballVel.length() < 0.18) {
         ballVel.set(0, 0, 0);
         isMoving = false;
         lastSafePos.copy(ballPos);
@@ -2428,10 +2473,19 @@
         }
       }
 
-      // Gerçekçi temas gölgesi (Topun hemen altında yeşil zemin üzerinde)
+      // Gerçekçi temas gölgesi (Topun altındaki yeşil zemin üzerinde dinamik projeksiyon)
       if (!isInHole) {
-        ballShadow.visible = true;
-        ballShadow.position.set(ballPos.x, ballPos.y - ballRadius + 0.004, ballPos.z);
+        const shadowGroundY = getGroundHeight(ballPos.x, ballPos.z);
+        if (shadowGroundY !== null && ballPos.y >= shadowGroundY + ballRadius - 0.05) {
+          ballShadow.visible = true;
+          ballShadow.position.set(ballPos.x, shadowGroundY + 0.005, ballPos.z);
+          const heightAboveGround = Math.max(0, ballPos.y - ballRadius - shadowGroundY);
+          const shadowScale = Math.max(0.35, 1.0 - heightAboveGround * 0.22);
+          ballShadow.scale.set(shadowScale, shadowScale, shadowScale);
+          shadowMat.opacity = Math.max(0.12, 0.65 - heightAboveGround * 0.18);
+        } else {
+          ballShadow.visible = false;
+        }
       } else {
         ballShadow.visible = false;
       }
