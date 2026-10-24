@@ -756,36 +756,92 @@
     const treeMat = new THREE.MeshStandardMaterial({ color: 0x1f7332, roughness: 0.7 });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a391c, roughness: 0.8 });
 
-    // --- Procedural Crystalline Ice Surface Texture (Buzlu Çatlaklar & Işıltı) ---
+    // --- Procedural Golf Battle Tarzı Çatlak Buz Dokusu (Vibrant Azure & Sharp Frost Cracks) ---
     function createIceTexture() {
       const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
+      canvas.width = 512;
+      canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Parlak buzul mavisi temel
-      ctx.fillStyle = '#9ee8fc';
-      ctx.fillRect(0, 0, 256, 256);
+      // 1. Zengin, doygun ve canlı buzul mavisi degrade zemin
+      const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
+      bgGrad.addColorStop(0.0, '#0070bb');
+      bgGrad.addColorStop(0.35, '#009ee8');
+      bgGrad.addColorStop(0.70, '#0085d0');
+      bgGrad.addColorStop(1.0, '#006cb5');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, 512, 512);
 
-      // Kristalize buz katmanları
-      const grad = ctx.createLinearGradient(0, 0, 256, 256);
-      grad.addColorStop(0.0, 'rgba(255, 255, 255, 0.55)');
-      grad.addColorStop(0.4, 'rgba(160, 230, 255, 0.25)');
-      grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.65)');
-      grad.addColorStop(1.0, 'rgba(140, 220, 255, 0.35)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 256, 256);
+      // 2. Crystalline Facet Refraction (Buz içindeki kristal kırılma poligonları)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      for (let i = 0; i < 24; i++) {
+        ctx.beginPath();
+        const px = (i * 73) % 512;
+        const py = (i * 127) % 512;
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + ((i * 37) % 90) - 45, py + ((i * 53) % 90) - 45);
+        ctx.lineTo(px + ((i * 61) % 110) - 55, py + ((i * 47) % 110) - 55);
+        ctx.closePath();
+        ctx.fill();
+      }
 
-      // İnce doğal buz çatlakları
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+      // 3. Golf Battle Tarzı Belirgin Beyaz Buz Çatlakları (Cracked Ice Cleavage Lines)
+      const crackSeeds = [
+        [[40, 60], [120, 140], [190, 130], [280, 210], [360, 200], [470, 280]],
+        [[480, 50], [410, 130], [330, 180], [250, 270], [180, 350], [90, 430]],
+        [[150, 10], [190, 90], [180, 180], [220, 290], [200, 390], [250, 490]],
+        [[10, 320], [90, 300], [170, 340], [270, 310], [380, 360], [500, 330]],
+        [[300, 10], [320, 80], [280, 160], [340, 240], [310, 340], [350, 480]],
+        [[60, 470], [140, 420], [230, 440], [320, 400], [420, 450], [490, 420]]
+      ];
+
+      // Ana çatlakların ışıltılı dış aurası
+      ctx.strokeStyle = 'rgba(160, 235, 255, 0.45)';
+      ctx.lineWidth = 4.5;
+      crackSeeds.forEach(pts => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i][0], pts[i][1]);
+        }
+        ctx.stroke();
+      });
+
+      // Ana çatlakların keskin, net beyaz çekirdek çizgileri
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.0;
+      crackSeeds.forEach(pts => {
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i][0], pts[i][1]);
+        }
+        ctx.stroke();
+      });
+
+      // Kılcal çatlak dallanmaları (Fracture capillaries)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.lineWidth = 1.2;
-      for (let i = 0; i < 35; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
+      for (let i = 0; i < 48; i++) {
+        const x = (i * 97) % 512;
+        const y = (i * 83) % 512;
+        const len = 18 + ((i * 17) % 32);
+        const ang = ((i * 43) % 360) * Math.PI / 180;
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x + (Math.random() - 0.5) * 45, y + (Math.random() - 0.5) * 45);
+        ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+        ctx.lineTo(x + Math.cos(ang + 0.5) * (len * 1.5), y + Math.sin(ang + 0.5) * (len * 1.5));
         ctx.stroke();
+      }
+
+      // 4. Donuk buz kristalleri ve ışıltı parçacıkları
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 60; i++) {
+        const sx = (i * 131) % 512;
+        const sy = (i * 149) % 512;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.2, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -798,11 +854,13 @@
     iceTex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
     const iceMat = new THREE.MeshStandardMaterial({
       map: iceTex,
-      color: 0xd2f5ff,
-      roughness: 0.04,
-      metalness: 0.22,
+      color: 0x1dbbff, // Net, canlı buzul mavisi
+      roughness: 0.06,
+      metalness: 0.16,
       transparent: true,
-      opacity: 0.86
+      opacity: 0.90,
+      emissive: 0x005599,
+      emissiveIntensity: 0.26
     });
 
     // --- Procedural Championship Dimpled Golf Ball Texture with Alignment Stripe ---
@@ -1313,12 +1371,26 @@
 
     // --- Kaygan ve Hızlandıran Buz Alanı (Ice Surface) ---
     function addIce(x, y, z, w, d) {
-      const geo = new THREE.BoxGeometry(w, 0.03, d);
+      const geo = new THREE.BoxGeometry(w, 0.026, d);
       const mesh = new THREE.Mesh(geo, iceMat);
       // Çim zemin kotundan 0.012m yukarıda pürüzsüz kaygan katman
       mesh.position.set(x, y + 0.012, z);
       mesh.receiveShadow = true;
       courseGroup.add(mesh);
+
+      // Golf Battle tarzı estetik buz çerçevesi / kristal pah kenarlığı
+      const borderGeo = new THREE.BoxGeometry(w + 0.06, 0.016, d + 0.06);
+      const borderMat = new THREE.MeshStandardMaterial({
+        color: 0x8be4ff,
+        roughness: 0.1,
+        metalness: 0.2,
+        transparent: true,
+        opacity: 0.50
+      });
+      const borderMesh = new THREE.Mesh(borderGeo, borderMat);
+      borderMesh.position.set(x, y + 0.008, z);
+      borderMesh.receiveShadow = true;
+      courseGroup.add(borderMesh);
 
       icePatches.push({
         x: x,
@@ -1536,7 +1608,7 @@
       addWall(0, 0.35, -8.12, 3.58, 0.7, 0.26);
       addWall(0, 0.35, 8.12, 3.58, 0.7, 0.26);
       // Ortada kaygan buz alanı: top üzerinden geçerken hızlanır ve kayar!
-      addIce(0, 0.1, -1.0, 2.8, 4.0);
+      addIce(0, 0.1, -1.0, 1.8, 3.6);
       addSand(-1.0, 0.1, -4.0, 1.2, 1.8);
       addBumper(-1.1, 0.1, 2.8, 0.38);
       addBumper(1.1, 0.1, 4.2, 0.38);
@@ -1566,8 +1638,8 @@
       addWall(2.02, 0.35, 0, 0.26, 0.7, 17.5);
       addWall(0, 0.35, -8.62, 3.78, 0.7, 0.26);
       addWall(0, 0.35, 8.62, 3.78, 0.7, 0.26);
-      addIce(0, 0.1, -3.0, 3.0, 3.5);
-      addIce(0, 0.1, 2.5, 3.0, 3.5);
+      addIce(0, 0.1, -3.0, 1.9, 3.0);
+      addIce(0, 0.1, 2.5, 1.9, 3.0);
       addBumper(-1.1, 0.1, -0.2, 0.40);
       addBumper(1.1, 0.1, -0.2, 0.40);
       addSand(0, 0.1, 8.0, 2.5, 0.8);
@@ -1605,7 +1677,7 @@
       addWall(-1.78, 0.35, -3.6, 0.26, 0.7, 6.2);
       // Orta geçiş koridoru (buzlu bağlantı)
       addFloor(0, 0, 0.0, 4.4, 0.2, 2.6);
-      addIce(0, 0.1, 0.0, 3.6, 2.0);
+      addIce(0, 0.1, 0.0, 2.2, 1.8);
       addWall(0, 0.35, -1.32, 3.6, 0.7, 0.26);
       addWall(0, 0.35, 1.32, 3.6, 0.7, 0.26);
       // Sağ hedef koridoru
@@ -1624,12 +1696,12 @@
       addWall(-3.5, 0.35, -7.12, 3.18, 0.7, 0.26);
       addWall(-1.78, 0.35, -3.12, 0.26, 0.7, 7.74);
       // Viraja giriş buz şeridi
-      addIce(-3.5, 0.1, -1.0, 2.8, 3.2);
+      addIce(-3.5, 0.1, -1.0, 1.8, 2.8);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
       addWall(-1.6, 0.35, 4.22, 7.45, 0.7, 0.28);
       addWall(-0.13, 0.35, 0.88, 3.56, 0.7, 0.26);
       // Değirmenin altı kaygan buz!
-      addIce(0.0, 0.1, 2.5, 4.8, 2.6);
+      addIce(0.0, 0.1, 2.5, 2.6, 2.2);
       addRotor(0.0, 0.1, 2.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
       addWall(5.22, 0.35, 5.25, 0.26, 0.7, 9.0);
@@ -1645,7 +1717,7 @@
       addWall(-2.02, 0.35, -3.95, 0.26, 0.7, 7.0);
       addWall(2.02, 0.35, -3.95, 0.26, 0.7, 7.0);
       addWall(0, 0.35, -7.32, 3.78, 0.7, 0.26);
-      addIce(0, 0.1, -4.0, 2.8, 3.0);
+      addIce(0, 0.1, -4.0, 1.8, 2.6);
       // Zirveye tırmanan rampa
       const ramp = addFloor(0, 0.275, 1.8, 3.8, 0.2, 5.1);
       ramp.rotation.x = -0.11;
@@ -1661,7 +1733,7 @@
       addWall(0, 1.05, 10.8, 4.58, 1.1, 0.28);
       addWall(-2.2, 0.95, 4.25, 0.52, 0.9, 0.26);
       addWall(2.2, 0.95, 4.25, 0.52, 0.9, 0.26);
-      addIce(0, 0.65, 5.8, 3.0, 2.2);
+      addIce(0, 0.65, 5.8, 2.0, 2.0);
       addRotor(0, 0.65, 5.8);
       addBumper(-1.3, 0.65, 7.8, 0.38);
       addBumper(1.3, 0.65, 7.8, 0.38);
@@ -1681,7 +1753,7 @@
       // z: 0.9 ile 3.0 arası BOŞLUK (Açık kanyon - top momentumuyla havada uçar!)
       // Karşıdaki yüksek ada yeşillik
       addFloor(0, 0.65, 5.0, 5.2, 0.2, 4.0);
-      addIce(0, 0.65, 5.0, 4.0, 2.5);
+      addIce(0, 0.65, 5.0, 2.2, 2.0);
 
       // Kupa alanı
       addFloorWithCupHole(0, 0.65, 9.0, 5.2, 0.2, 4.0, 0, 9.5, 0.21);
@@ -1703,13 +1775,13 @@
       addWall(-5.92, 0.35, -3.8, 0.26, 0.7, 7.7);
       addWall(-4.0, 0.35, -7.62, 3.58, 0.7, 0.26);
       addWall(-2.08, 0.35, -4.5, 0.26, 0.7, 6.0);
-      addIce(-4.0, 0.1, -5.0, 2.8, 3.0);
+      addIce(-4.0, 0.1, -5.0, 1.8, 2.6);
       // 2. Kademe: Değirmenli orta geçiş
       addFloor(0, 0, 1.2, 11.6, 0.2, 3.4);
       addWall(-2.0, 0.35, 2.92, 8.2, 0.7, 0.28);
       addWall(0.0, 0.35, -0.52, 4.0, 0.7, 0.26);
       addRotor(-1.5, 0.1, 1.2);
-      addIce(1.5, 0.1, 1.2, 3.0, 2.2);
+      addIce(1.5, 0.1, 1.2, 2.0, 2.0);
       // 3. Kademe: Yüksek zirveye tırmanış rampası
       const ramp = addFloor(4.0, 0.275, 4.8, 3.6, 0.2, 4.2);
       ramp.rotation.x = -0.13;
@@ -2182,13 +2254,14 @@
 
         const curSpd = Math.hypot(ballVel.x, ballVel.z);
         if (onIce) {
-          // Buz üzerinde sıfıra yakın sürtünme + hafif dinamik hızlanma ivmesi
-          if (curSpd > 0.4 && curSpd < 22.0) {
-            ballVel.x *= Math.pow(1.008, subDt * 60);
-            ballVel.z *= Math.pow(1.008, subDt * 60);
+          // Buz üzerinde dengeli kayma: Çime göre 2.5 kat daha az sürtünme ile uzun ve hızlı kayar,
+          // ancak ASLA sonsuza kadar gitmez; düzenli olarak yavaşlayıp eninde sonunda durur!
+          if (curSpd > 2.0) {
+            ballVel.x *= Math.pow(0.988, subDt * 60);
+            ballVel.z *= Math.pow(0.988, subDt * 60);
           } else {
-            ballVel.x *= Math.pow(0.998, subDt * 60);
-            ballVel.z *= Math.pow(0.998, subDt * 60);
+            ballVel.x *= Math.pow(0.970, subDt * 60);
+            ballVel.z *= Math.pow(0.970, subDt * 60);
           }
         } else if (!isAirborne) {
           // Standart çim sürtünmesi: Düşük hızlarda yumuşakça durur, yüksek hızda uzun kayar
@@ -2210,20 +2283,18 @@
         ballPos.z += ballVel.z * subDt;
 
         // Dikey Fizik, Eğim ve Zıplama Kontrolü
-        const distToCup2D = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
-        if (distToCup2D < 0.42) {
-          // Deliğin tam ağzında (3D oyuk kupa üzerinde): Top deliğin yüzey kotunda tutulur, asla boşlukta/havada sayılmaz!
-          ballPos.y = holeCupPos.y + ballRadius;
-          ballVel.y = 0;
-          isAirborne = false;
-        } else if (isAirborne) {
+        if (isAirborne) {
           // Gerçekçi yerçekimi (11.5 m/s²: doğal parabolik balistik eğri)
           ballVel.y -= 11.5 * subDt;
           ballPos.y += ballVel.y * subDt;
 
           // Havada süzülürken zemine iniş kontrolü (SADECE iniş halindeyken ballVel.y <= 0)
           if (ballVel.y <= 0) {
-            const landingGroundY = getGroundHeight(ballPos.x, ballPos.z);
+            let landingGroundY = getGroundHeight(ballPos.x, ballPos.z);
+            const dCup = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
+            if (landingGroundY === null && dCup < 0.35) {
+              landingGroundY = holeCupPos.y;
+            }
             if (landingGroundY !== null) {
               const expectedY = landingGroundY + ballRadius;
               if (ballPos.y <= expectedY + 0.04 && ballPos.y >= expectedY - 0.35) {
@@ -2241,7 +2312,11 @@
           }
         } else {
           // Top zeminde yuvarlanıyor: Yüksekliği doğrudan zemine kenetle
-          const groundY = getGroundHeight(ballPos.x, ballPos.z);
+          let groundY = getGroundHeight(ballPos.x, ballPos.z);
+          const dCup = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
+          if (groundY === null && dCup < 0.35) {
+            groundY = holeCupPos.y; // 3D oyuk deliği üzerinde zemin seviyesi
+          }
           if (groundY !== null) {
             ballPos.y = groundY + ballRadius;
             ballVel.y = 0;
@@ -2344,13 +2419,17 @@
       }
 
       // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü
+      // Top havadaysa VEYA çok hızlıysa delik topu ASLA çekemez (üstünden uçar/geçer!)
+      const curBallSpeed = ballVel.length();
       const toCup = holeCupPos.clone().sub(ballPos);
+      const cupDistY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
       toCup.y = 0;
       const cupDist = toCup.length();
 
-      if (cupDist < 0.48) {
-        ballVel.addScaledVector(toCup.normalize(), 9.0 * dt);
-        if (cupDist < 0.22 && ballVel.length() < 14.0) {
+      // SADECE top zemin seviyesindeyse (havada uçmuyorsa) ve hızı putt sınırındaysa (< 3.8 m/s):
+      if (!isAirborne && cupDistY < 0.08 && curBallSpeed < 3.8 && cupDist < 0.40) {
+        ballVel.addScaledVector(toCup.normalize(), 6.0 * dt);
+        if (cupDist < 0.18 && curBallSpeed < 3.2) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
