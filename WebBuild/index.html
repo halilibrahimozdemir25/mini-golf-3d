@@ -1153,7 +1153,7 @@
         name: "9. Tramplin Uçurumu & Atlama",
         par: 4,
         spawn: new THREE.Vector3(0, 0.22, -6.5),
-        cup: new THREE.Vector3(0, 0.65, 9.5)
+        cup: new THREE.Vector3(0, 0.75, 9.5)
       },
       {
         name: "10. Şampiyonlar Zirvesi",
@@ -2242,6 +2242,89 @@
       return true;
     }
 
+    // --- Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü (Düşük Hız Kalibrasyonu & Gerçekçi Delik Fiziği) ---
+    function checkCupEntry(stepDt) {
+      if (isInHole || isSinking) return true;
+
+      const curBallSpeed = Math.hypot(ballVel.x, ballVel.z);
+      const toCup = holeCupPos.clone().sub(ballPos);
+      const cupDistY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
+      toCup.y = 0;
+      const cupDist = toCup.length();
+
+      // Top zemin seviyesine yakın olmalı (yüksekten uçarken çekim olmaz)
+      const isNearTurf = cupDistY < 0.35;
+      if (!isNearTurf) return false;
+
+      // Eğer havadaysa fakat zemin seviyesine çok yakınsa ve düşük putt hızındaysa (< 3.8 m/s, ballVel.y < 0.8) düşüşe izin ver
+      if (isAirborne && (curBallSpeed > 3.8 || ballVel.y > 0.8 || cupDistY > 0.20)) {
+        return false;
+      }
+
+      // 1. DÜŞÜK HIZ KALİBRASYONU (v < 2.5 m/s):
+      // Nazik dokunuşlar, kısa putt'lar ve delik kenarından geçen toplar için hassas çekim ve anında batma
+      if (curBallSpeed < 2.5) {
+        if (cupDist < 0.65) {
+          const pull = 22.0 * (1.0 - cupDist / 0.65);
+          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
+          ballVel.multiplyScalar(Math.pow(0.96, stepDt * 60));
+        }
+
+        // Topun gövdesi delik çemberine (kupa yarıçapı 0.21m + top yarıçapı 0.12m = 0.33m) temas ettiğinde içeri düşer:
+        if (cupDist < 0.35) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          isAirborne = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return true;
+        }
+      }
+      // 2. ORTA PUTT HIZI KALİBRASYONU (2.5 <= v < 4.0 m/s):
+      else if (curBallSpeed < 4.0) {
+        if (cupDist < 0.52) {
+          const pull = 16.0 * (1.0 - cupDist / 0.52);
+          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
+          ballVel.multiplyScalar(Math.pow(0.97, stepDt * 60));
+        }
+
+        if (cupDist < 0.29) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          isAirborne = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return true;
+        }
+      }
+      // 3. HIZLI PUTT KALİBRASYONU (4.0 <= v < 4.8 m/s):
+      else if (curBallSpeed < 4.8) {
+        if (cupDist < 0.40) {
+          const pull = 10.0 * (1.0 - cupDist / 0.40);
+          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
+        }
+
+        if (cupDist < 0.23) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          isAirborne = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return true;
+        }
+      }
+      // 4. AŞIRI HIZLI VURUŞLAR (v >= 4.8 m/s):
+      // Gerçekçilik: Hızlı fırlatılmış top deliğin üstünden zıplayıp/uçup geçer, delik içine çekilmez!
+
+      return false;
+    }
+
     // --- Physics Simulation Loop (Monotonic High-Precision Timing) ---
     let lastAnimTime = 0;
     let gameElapsedTime = 0;
@@ -2327,6 +2410,9 @@
         ballPos.x += ballVel.x * subDt;
         ballPos.z += ballVel.z * subDt;
 
+        // Her alt adımda delik kontrolü yap (Top deliğin üzerinden geçerken hiçbir an kaçırılmaz)
+        if (checkCupEntry(subDt)) return;
+
         // Dikey Fizik, Eğim ve Zıplama Kontrolü
         if (isAirborne) {
           // Gerçekçi yerçekimi (11.5 m/s²: doğal parabolik balistik eğri)
@@ -2337,7 +2423,7 @@
           if (ballVel.y <= 0) {
             let landingGroundY = getGroundHeight(ballPos.x, ballPos.z);
             const dCup = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
-            if (landingGroundY === null && dCup < 0.35) {
+            if (landingGroundY === null && dCup < 0.45) {
               landingGroundY = holeCupPos.y;
             }
             // Hole 9: Rampaya tersten (ada/delik tarafından geriye doğru) uçuşta top rampaya tutunamaz, kanyona düşer!
@@ -2366,7 +2452,7 @@
           // Top zeminde yuvarlanıyor: Yüksekliği doğrudan zemine kenetle
           let groundY = getGroundHeight(ballPos.x, ballPos.z);
           const dCup = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
-          if (groundY === null && dCup < 0.35) {
+          if (groundY === null && dCup < 0.45) {
             groundY = holeCupPos.y; // 3D oyuk deliği üzerinde zemin seviyesi
           }
           if (groundY !== null) {
@@ -2470,33 +2556,8 @@
         }
       }
 
-      // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü (Hassas ve Gerçekçi Delik Fiziği)
-      const curBallSpeed = ballVel.length();
-      const toCup = holeCupPos.clone().sub(ballPos);
-      const cupDistY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
-      toCup.y = 0;
-      const cupDist = toCup.length();
-
-      // SADECE top zemin seviyesindeyse (havada yüksekten uçmuyorsa) ve putt hızındaysa (< 4.8 m/s):
-      if (!isAirborne && cupDistY < 0.25 && curBallSpeed < 4.8 && cupDist < 0.52) {
-        // Doğal delik çekimi (delik kenarından merkeze doğru gravitasyonel yönlendirme)
-        const pull = 14.0 * (1.0 - cupDist / 0.52);
-        ballVel.addScaledVector(toCup.clone().normalize(), pull * dt);
-        // Deliğe yaklaşırken teğetsel kaymayı yumuşat
-        ballVel.multiplyScalar(Math.pow(0.96, dt * 60));
-
-        // Top deliğin ağzına (çap 0.42m, yarıçap 0.21m) ulaştığında içeri düşer
-        if (cupDist < 0.26) {
-          isSinking = true;
-          isInHole = true;
-          isMoving = false;
-          isAirborne = false;
-          sinkFallVel = 0;
-          playHoleIn();
-          setTimeout(showHoleModal, 900);
-          return;
-        }
-      }
+      // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü (dt adımı kontrolü)
+      if (checkCupEntry(dt)) return;
 
       // 4. Kanyon Düşüşü & Parkur Dışı (Game Over) Algılama
       // Top deliğe girmişse veya deliğe batıyorsa ASLA Game Over tetiklenemez!
@@ -2509,6 +2570,18 @@
 
       // Topun Tamamen Durması
       if (!isAirborne && ballVel.length() < 0.18) {
+        // Eğer top delik ağzında veya üzerinde yavaşlayıp duruyorsa doğrudan deliğe düşer
+        const dToCup = Math.hypot(holeCupPos.x - ballPos.x, holeCupPos.z - ballPos.z);
+        const dToCupY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
+        if (dToCup < 0.38 && dToCupY < 0.35) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return;
+        }
         ballVel.set(0, 0, 0);
         isMoving = false;
         lastSafePos.copy(ballPos);
