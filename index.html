@@ -244,6 +244,7 @@
   <div id="power-badge" style="display:none !important;"></div>
 
   <div id="hint">🎯 Vuruş: Topa dokun ve geri çek | 🔄 Kamera: Boşlukta kaydır</div>
+  <div id="toast" style="display:none; position:fixed; top:75px; left:50%; transform:translateX(-50%); background:rgba(15,23,42,0.92); color:#38bdf8; font-family:-apple-system,sans-serif; font-weight:800; font-size:15px; padding:10px 22px; border-radius:24px; border:1px solid rgba(56,189,248,0.4); box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:9999; pointer-events:none; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:opacity 0.3s; opacity:0;">Piste Geri Döndü 🔄</div>
 
   <div id="modal">
     <div class="modal-card">
@@ -885,7 +886,7 @@
       emissiveIntensity: 0.28
     });
 
-    // --- Procedural Championship Dimpled Golf Ball Texture with Alignment Stripe ---
+    // --- Procedural Championship Dimpled Golf Ball Texture with VIP Geometric Pattern ---
     function createGolfBallTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
@@ -893,13 +894,13 @@
       const ctx = canvas.getContext('2d');
 
       // Parlak inci beyazı turnuva tabanı
-      ctx.fillStyle = '#f8f9fb';
+      ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, 512, 512);
 
       // Gerçekçi 3D Çukurcuk (Dimple) Deseni - Staggered Hexagonal Grid
-      const dimpleRadius = 9;
-      const rowSpacing = 19;
-      const colSpacing = 22;
+      const dimpleRadius = 8;
+      const rowSpacing = 18;
+      const colSpacing = 20;
 
       for (let y = 0; y < 512 + rowSpacing; y += rowSpacing) {
         const isOdd = Math.floor(y / rowSpacing) % 2 === 1;
@@ -909,36 +910,92 @@
           const cy = y;
           const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, dimpleRadius);
           grad.addColorStop(0, '#ffffff');
-          grad.addColorStop(0.65, '#e5e9ee');
-          grad.addColorStop(1.0, '#c4cbcd');
+          grad.addColorStop(0.7, '#e2e8f0');
+          grad.addColorStop(1.0, '#cbd5e1');
 
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(cx, cy, dimpleRadius, 0, Math.PI * 2);
           ctx.fill();
-
-          ctx.strokeStyle = 'rgba(170, 180, 195, 0.30)';
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
         }
       }
 
-      // Velocity Pro Tour Çift Renkli Nişan Çizgisi (Koyu Lacivert & Ateş Kırmızısı)
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 250, 512, 12);
-      ctx.fillStyle = '#ff204e';
-      ctx.fillRect(0, 246, 512, 4);
-      ctx.fillRect(0, 262, 512, 4);
+      // Geometrik Pentagonal / Truvis Spor Deseni (Modern Golf Battle Tarzı)
+      const drawPentagon = (px, py, r, color, borderColor = '#0f172a') => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
+          const x = px + r * Math.cos(angle);
+          const y = py + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      };
 
-      // Kırmızı Tour "1" Numarası ve Şampiyona Noktası
-      ctx.fillStyle = '#ff204e';
-      ctx.font = 'bold 38px -apple-system, sans-serif';
+      // Turnuva desen panelleri
+      const patches = [
+        { x: 128, y: 120, r: 38, col: '#0284c7' }, // Electric Azure
+        { x: 384, y: 120, r: 38, col: '#ef4444' }, // Coral Red
+        { x: 128, y: 392, r: 38, col: '#8b5cf6' }, // Royal Violet
+        { x: 384, y: 392, r: 38, col: '#f59e0b' }, // Amber Gold
+        { x: 256, y: 60,  r: 28, col: '#10b981' }, // Emerald
+        { x: 256, y: 452, r: 28, col: '#ec4899' }, // Neon Pink
+        { x: 40,  y: 256, r: 26, col: '#06b6d4' }, // Cyan
+        { x: 472, y: 256, r: 26, col: '#f97316' }  // Orange
+      ];
+      patches.forEach(p => drawPentagon(p.x, p.y, p.r, p.col));
+
+      // Ekvator Çizgileri & Hız Okları (Equator Stripe & Speed Chevrons)
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 240, 512, 32);
+
+      // Çift altın ince şerit
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(0, 237, 512, 3);
+      ctx.fillRect(0, 272, 512, 3);
+
+      // Beyaz Oklar (Speed Chevrons)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (let x = 32; x < 512; x += 64) {
+        ctx.beginPath();
+        ctx.moveTo(x - 8, 248);
+        ctx.lineTo(x + 4, 256);
+        ctx.lineTo(x - 8, 264);
+        ctx.stroke();
+      }
+
+      // Merkez Rozet: "VELOCITY 9" ve Yıldızlar
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(256, 185, 36, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 13px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('1', 256, 175);
-      ctx.beginPath();
-      ctx.arc(256, 208, 4.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillText('VELOCITY', 256, 175);
+
+      ctx.fillStyle = '#facc15';
+      ctx.font = '900 24px -apple-system, sans-serif';
+      ctx.fillText('9', 256, 196);
+
+      // Alt Rozet: Yıldızlar
+      ctx.fillStyle = '#facc15';
+      ctx.font = '16px -apple-system, sans-serif';
+      ctx.fillText('★★★', 256, 325);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
@@ -1088,7 +1145,37 @@
     let jumpRamps = [];
     let holeCupPos = new THREE.Vector3(0, 0.1, 6.5);
 
+    let toastTimeout = null;
+    function showToast(text = "Piste Geri Döndü 🔄") {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.innerText = text;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.style.display = 'none'; }, 300);
+      }, 1600);
+    }
+
+    function respawnBall() {
+      isMoving = false;
+      isAirborne = false;
+      airborneFlightTimer = 0;
+      ballVel.set(0, 0, 0);
+      ballPos.copy(lastSafePos);
+      ball.position.copy(lastSafePos);
+      shadow.position.set(lastSafePos.x, lastSafePos.y - ballRadius + 0.005, lastSafePos.z);
+      showToast("Piste Geri Döndü 🔄");
+    }
+
     function triggerGameOver() {
+      // İlk 10 Bölümde ASLA kaybetme yok: top otomatik olarak piste güvenli noktaya geri döner
+      if (currentHole < 10) {
+        respawnBall();
+        return;
+      }
       isMoving = false;
       ballVel.set(0, 0, 0);
       document.getElementById('gameover-modal').style.display = 'flex';
@@ -1580,57 +1667,101 @@
       courseGroup.add(flag);
     }
 
+    function createWoodPostMesh(radius = 0.20, height = 0.65) {
+      const group = new THREE.Group();
+
+      // Silindirik ahşap gövde
+      const bodyGeo = new THREE.CylinderGeometry(radius, radius * 1.05, height, 16);
+      const body = new THREE.Mesh(bodyGeo, woodMat);
+      body.position.y = height * 0.5;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      group.add(body);
+
+      // Üst pahlı ahşap kapak
+      const capGeo = new THREE.CylinderGeometry(radius * 1.10, radius * 1.06, 0.08, 16);
+      const cap = new THREE.Mesh(capGeo, wallTopMat);
+      cap.position.y = height + 0.04;
+      cap.castShadow = true;
+      group.add(cap);
+
+      // Dekoratif pirinç/altın halka
+      const ringGeo = new THREE.CylinderGeometry(radius * 1.04, radius * 1.04, 0.04, 16);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.35, metalness: 0.85 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.y = height * 0.65;
+      ring.castShadow = true;
+      group.add(ring);
+
+      return group;
+    }
+
     function spawnDecorations(idx = 0) {
       treeColliders = [];
-      // Her bölüm için özel olarak duvarların ve buzların tamamen dışında,
-      // estetik peyzaj alanlarına yerleştirilmiş ağaç koordinatları
-      const holeTrees = [
-        // Hole 1: Çam Vadisi
-        [[-4.5, -4.5], [-4.2, 3.5], [4.5, -2.5], [4.6, 4.5], [-4.2, 7.5], [4.4, -6.5]],
-        // Hole 2: Buz Pisti
-        [[-4.5, -5.0], [-4.2, 1.5], [4.4, -3.5], [4.5, 4.5], [-4.3, 6.5], [4.2, -6.5]],
-        // Hole 3: Değirmen & Kum (L dönüş)
-        [[-7.0, -4.0], [-7.2, 1.5], [-1.5, 6.5], [7.2, 4.5], [7.0, 8.5], [1.5, -4.5]],
-        // Hole 4: Çift Buz Geçidi
-        [[-4.5, -4.5], [-4.2, 2.5], [4.5, -1.5], [4.4, 5.5], [-4.3, 7.0], [4.2, -5.5]],
-        // Hole 5: Zirve & Pinball Tamponları (Rampa ve zirve platformunun dış peyzajı)
-        [[-4.6, -5.0], [-4.8, -1.5], [-5.2, 5.5], [-5.0, 9.0], [4.6, -5.0], [4.8, -1.5], [5.2, 5.5], [5.0, 9.0], [-2.5, 12.5], [2.5, 12.5]],
-        // Hole 6: Zigzag Virajlar (Virajların ve koridorların güvenli dış alanları)
-        [[-7.5, -4.0], [-7.5, 1.5], [7.5, 1.0], [7.5, 6.5], [2.5, -4.5], [-2.5, 6.0], [3.5, 9.5]],
-        // Hole 7: Buzlu Değirmen Labirenti
-        [[-4.6, -4.5], [-4.4, 2.0], [4.5, -2.5], [4.6, 4.5], [-4.2, 7.0], [4.4, -6.0]],
-        // Hole 8: Zirve Tırmanışı
-        [[-4.8, -4.5], [-4.8, 1.5], [-5.0, 7.5], [4.8, -3.5], [4.8, 2.5], [5.0, 8.0]],
-        // Hole 9: Tramplin Uçurumu (Geniş kanyon vadisi dışı)
-        [[-5.2, -5.0], [-5.0, -1.5], [-5.6, 6.0], [-5.5, 9.5], [5.2, -5.0], [5.0, -1.5], [5.6, 6.0], [5.5, 9.5]],
-        // Hole 10: Şampiyonlar Zirvesi
-        [[-7.8, -4.0], [-7.8, 0.5], [-4.5, 4.5], [0.0, -5.5], [8.5, 4.5], [8.5, 9.5]]
+
+      // 1. Doğal Arka Plan Ağaçları:
+      // Pistin veya duvarların içinde DEĞİL, pistten tamamen uzakta (x = ±8.5m),
+      // sadece manzaraya derinlik ve estetik katan 2 adet çam ağacı
+      const scenicTrees = [
+        [-8.5, 0.0],
+        [8.5, 0.0]
       ];
 
-      const trees = (holeTrees[idx] || holeTrees[0]);
-      trees.forEach(([tx, tz]) => {
+      scenicTrees.forEach(([tx, tz]) => {
         const tree = new THREE.Group();
         tree.position.set(tx, 0, tz);
 
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.6, 8), trunkMat);
-        trunk.position.y = 0.3;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8), trunkMat);
+        trunk.position.y = 0.35;
         trunk.castShadow = true;
         tree.add(trunk);
 
-        const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.9, 8), treeMat);
-        cone1.position.y = 1.0;
+        const cone1 = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.1, 8), treeMat);
+        cone1.position.y = 1.1;
         cone1.castShadow = true;
         tree.add(cone1);
 
-        const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.7, 8), treeMat);
-        cone2.position.y = 1.55;
+        const cone2 = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.85, 8), treeMat);
+        cone2.position.y = 1.75;
         cone2.castShadow = true;
         tree.add(cone2);
 
         courseGroup.add(tree);
+      });
 
-        // Aktif ağaç gövdesi çarpışma alanı (Top ağaçlara çarpınca içinden geçemez, doğal olarak seker)
-        treeColliders.push({ x: tx, z: tz, radius: 0.28 });
+      // 2. Gereksiz Ağaçlandırmalar Yerine Bölümlere Özel Tahta Engeller (Wooden Obstacles):
+      // Pist içi taktiksel ahşap babalar / engeller. Top çarpınca fiziksel olarak seker.
+      // Her eleman: [x, y, z, radius]
+      const holeWoodObstacles = [
+        // Hole 1: 1. Çam Vadisi
+        [[-0.85, 0.1, -1.2, 0.22], [0.85, 0.1, 0.5, 0.22]],
+        // Hole 2: 2. Buz Pisti
+        [[0.9, 0.1, -2.8, 0.22], [-0.9, 0.1, 1.2, 0.22]],
+        // Hole 3: 3. Değirmen & Kum Tuzağı (L Dönüş)
+        [[-3.5, 0.1, -1.2, 0.22], [3.5, 0.1, 4.5, 0.22]],
+        // Hole 4: 4. Çift Buz Geçidi
+        [[-1.0, 0.1, 0.0, 0.22], [1.0, 0.1, 0.0, 0.22]],
+        // Hole 5: 5. Zirve & Pinball Tamponları
+        [[-1.1, 0.1, -2.0, 0.22], [1.1, 0.1, -2.0, 0.22]],
+        // Hole 6: 6. Zigzag Virajlar
+        [[-3.5, 0.1, -1.2, 0.22], [3.5, 0.1, 4.2, 0.22]],
+        // Hole 7: 7. Buzlu Değirmen Labirenti
+        [[-3.5, 0.1, -2.8, 0.22], [3.5, 0.1, 4.0, 0.22]],
+        // Hole 8: 8. Buzlu Zirve Tırmanışı
+        [[-1.1, 0.1, -2.0, 0.22], [1.1, 0.1, -2.0, 0.22]],
+        // Hole 9: 9. Tramplin Uçurumu
+        [[-1.2, 0.1, -3.2, 0.22], [1.2, 0.1, -3.2, 0.22], [-1.8, 0.75, 4.2, 0.22], [1.8, 0.75, 4.2, 0.22]],
+        // Hole 10: 10. Şampiyonlar Zirvesi
+        [[-4.0, 0.1, -2.2, 0.22], [0.0, 0.1, 1.8, 0.22], [2.6, 0.65, 8.2, 0.22], [5.4, 0.65, 8.2, 0.22]]
+      ];
+
+      const obstacles = holeWoodObstacles[idx] || [];
+      obstacles.forEach(([ox, oy, oz, r]) => {
+        const post = createWoodPostMesh(r || 0.22, 0.65);
+        post.position.set(ox, oy, oz);
+        courseGroup.add(post);
+        // Aktif fiziksel çarpışma alanı: top çarptığında seker
+        treeColliders.push({ x: ox, z: oz, radius: (r || 0.22) * 1.05 });
       });
     }
 
@@ -2570,10 +2701,10 @@
       // 3. Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü (dt adımı kontrolü)
       if (checkCupEntry(dt)) return;
 
-      // 4. Kanyon Düşüşü & Parkur Dışı (Game Over) Algılama
+      // 4. Kanyon Düşüşü & Parkur Dışı (Game Over / Güvenli Respawn) Algılama
       // Top deliğe girmişse veya deliğe batıyorsa ASLA Game Over tetiklenemez!
       if (!isInHole && !isSinking) {
-        if (ballPos.y < -1.8 || Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
+        if (ballPos.y < -0.8 || Math.abs(ballPos.x) > 14.0 || Math.abs(ballPos.z) > 22.0) {
           triggerGameOver();
           return;
         }
