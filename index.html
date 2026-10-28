@@ -1153,7 +1153,7 @@
         name: "9. Tramplin Uçurumu & Atlama",
         par: 4,
         spawn: new THREE.Vector3(0, 0.22, -6.5),
-        cup: new THREE.Vector3(0, 0.75, 9.5)
+        cup: new THREE.Vector3(0, 0.75, 10.2)
       },
       {
         name: "10. Şampiyonlar Zirvesi",
@@ -1786,31 +1786,35 @@
 
     // --- Hole 9 (9. Tramplin Uçurumu & Atlama - Havada Uçuş & Ada Zemin) ---
     function buildHole9() {
-      // Kalkış pisti
+      // 1. Kalkış pisti
       addFloor(0, 0, -5.0, 4.0, 0.2, 5.0);
       addWall(-2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
       addWall(2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
       addWall(0, 0.35, -7.62, 3.98, 0.7, 0.26);
 
-      // Dik kalkış tramplini: Giriş kotu zeminle 100% sıfır birleşir, lip kotu 1.04m'ye yükselir
+      // 2. Dik kalkış tramplini: Giriş kotu zeminle 100% sıfır birleşir, lip kotu 1.04m'ye yükselir
       addJumpRamp(0, 0.47, -0.8, 3.8, 0.2, 3.4, -0.28);
 
-      // z: 0.9 ile 3.0 arası BOŞLUK (Açık kanyon - top momentumuyla havada uçar!)
-      // Karşıdaki yüksek ada yeşillik
-      addFloor(0, 0.65, 5.0, 5.2, 0.2, 4.0);
-      addIce(0, 0.65, 5.0, 2.2, 2.0);
+      // 3. z: 0.9 ile 2.5 arası BOŞLUK (Açık kanyon - top momentumuyla havada uçar!)
+      // Karşıdaki genişletilmiş yüksek ada çim alanı (y: 0.65, zemin kotu: 0.75m)
+      // Landing Fairway: z = 2.5'ten 7.9'a kadar geniş, sağlam çim zemin
+      addFloor(0, 0.65, 5.2, 6.4, 0.2, 5.4);
 
-      // Kupa alanı
-      addFloorWithCupHole(0, 0.65, 9.0, 5.2, 0.2, 4.0, 0, 9.5, 0.21);
+      // Green ve kupa alanı: z = 7.6'dan 13.0'a kadar geniş yeşil alan, kupa z = 10.2'de
+      addFloorWithCupHole(0, 0.65, 10.3, 6.4, 0.2, 5.4, 0, 10.2, 0.21);
 
-      // Ada duvarları: Doğal alçak korkuluklar (h: 0.60, kot: 0.80 -> çimden 0.35m yüksekte)
-      // Bu sayede aşırı hızlı atışlar gerçeğe uygun şekilde pistten çıkıp kanyona uçar!
-      addWall(-2.72, 0.80, 7.0, 0.26, 0.60, 8.2);
-      addWall(2.72, 0.80, 7.0, 0.26, 0.60, 8.2);
-      addWall(0, 0.80, 11.12, 5.18, 0.60, 0.26);
+      // Ada duvarları: Sağlam yüksek korkuluklar (h: 0.90m, kot: 0.95 -> sekme sonrası parkur dışı kaymayı kesin önler)
+      addWall(-3.32, 0.95, 7.8, 0.26, 0.90, 11.0);
+      addWall(3.32, 0.95, 7.8, 0.26, 0.90, 11.0);
+      addWall(0, 0.95, 13.22, 6.38, 0.90, 0.26);
 
-      addBumper(-1.5, 0.65, 8.0, 0.40);
-      addBumper(1.5, 0.65, 8.0, 0.40);
+      // Kanyon tarafı güvenlik bordürü (Yan kanatlar: topun iniş sonrası geriye kanyona kaymasını önler)
+      addWall(-2.45, 0.88, 2.50, 1.5, 0.65, 0.26);
+      addWall(2.45, 0.88, 2.50, 1.5, 0.65, 0.26);
+
+      // Ada üzerindeki yönlendirici pinball tamponları (Kenarlarda stratejik konumlandırılmış)
+      addBumper(-1.8, 0.65, 8.8, 0.40);
+      addBumper(1.8, 0.65, 8.8, 0.40);
     }
 
     // --- Hole 10 (10. Şampiyonlar Zirvesi - Grand Finale Usta Parkuru) ---
@@ -2426,20 +2430,24 @@
             if (landingGroundY === null && dCup < 0.45) {
               landingGroundY = holeCupPos.y;
             }
-            // Hole 9: Rampaya tersten (ada/delik tarafından geriye doğru) uçuşta top rampaya tutunamaz, kanyona düşer!
-            if (currentHole === 8 && ballVel.z < 0 && ballPos.z > -2.4) {
+            // Hole 9: SADECE kanyon boşluğu bölgesinde (z < 2.45) geriye doğru uçuşta rampaya tutunmayı engelle
+            // Ada üzerinde (z >= 2.45) normal iniş ve sekme güvenle çalışır
+            if (currentHole === 8 && ballVel.z < 0 && ballPos.z > -2.0 && ballPos.z < 2.45) {
               landingGroundY = null;
             }
             if (landingGroundY !== null) {
               const expectedY = landingGroundY + ballRadius;
-              if (ballPos.y <= expectedY + 0.04 && ballPos.y >= expectedY - 0.35) {
+              if (ballPos.y <= expectedY + 0.04 && ballPos.y >= expectedY - 0.50) {
                 ballPos.y = expectedY;
                 lastGroundY = landingGroundY;
-                // Gerçekçi golf topu sekmesi: İniş hızına ve yüksekliğe bağlı olarak 1-2 kez doğal şekilde seker
-                if (ballVel.y < -0.70) {
-                  ballVel.y = -ballVel.y * 0.38;
-                  ballVel.x *= 0.94;
-                  ballVel.z *= 0.94;
+                // Gerçekçi golf topu sekmesi: Düşüş hızıyla orantılı doğal sekme
+                const impactVy = ballVel.y;
+                if (impactVy < -0.60) {
+                  const bounceRestitution = 0.32;
+                  ballVel.y = -impactVy * bounceRestitution;
+                  // Çime çarpma anında gerçekçi çim sürtünmesi ve enerji kaybı (Topun aşağıya kaymasını önler)
+                  ballVel.x *= 0.68;
+                  ballVel.z *= 0.68;
                   playBounce();
                 } else {
                   ballVel.y = 0;
@@ -2488,8 +2496,11 @@
 
             if (launchPitch > 0) {
               const fwdSpeed = Math.hypot(ballVel.x, ballVel.z);
-              ballVel.y = fwdSpeed * Math.sin(launchPitch);
-              const cosP = Math.cos(launchPitch);
+              // Kalibre edilmiş rampa fırlatması: Hızla orantılı doğal balistik uçuş
+              const launchAngle = 0.24; // ~14 derece ideal kalkış açısı
+              const rawVy = fwdSpeed * Math.sin(launchAngle);
+              ballVel.y = Math.min(rawVy, 3.8); // Dengeli dikey itme (top aşırı yükselmez)
+              const cosP = Math.cos(launchAngle);
               ballVel.x *= cosP;
               ballVel.z *= cosP;
             } else {
