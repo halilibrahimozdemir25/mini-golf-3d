@@ -436,6 +436,7 @@
 
     // Doğal golf sahası çevresi (buildGolfEnvironment fonksiyonu ile zenginleştirildi)
     let envClouds = null;
+    let envRiverTex = null;
 
     // --- Golf Battle Birebir Şampiyona Damalı Çim Dokusu (Golf Battle Renk & Desenleri) ---
     function createGolfGrassTexture() {
@@ -975,21 +976,21 @@
       emissiveIntensity: 0.28
     });
 
-    // --- Procedural Championship Dimpled Golf Ball Texture with VIP Geometric Pattern ---
+    // --- Şık ve Modern Şampiyona Beyaz Golf Topu (TaylorMade TP5 Pix & Callaway Truvis Tarzı) ---
     function createGolfBallTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Parlak inci beyazı turnuva tabanı
-      ctx.fillStyle = '#f8fafc';
+      // 1. Parlak Kar / İnci Beyazı Turnuva Tabanı
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 512, 512);
 
-      // Gerçekçi 3D Çukurcuk (Dimple) Deseni - Staggered Hexagonal Grid
-      const dimpleRadius = 8;
-      const rowSpacing = 18;
-      const colSpacing = 20;
+      // 2. Gerçekçi 3D Çukurcuk (Dimple) Deseni - Staggered Hexagonal Grid
+      const dimpleRadius = 7.5;
+      const rowSpacing = 16;
+      const colSpacing = 18;
 
       for (let y = 0; y < 512 + rowSpacing; y += rowSpacing) {
         const isOdd = Math.floor(y / rowSpacing) % 2 === 1;
@@ -999,7 +1000,7 @@
           const cy = y;
           const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, dimpleRadius);
           grad.addColorStop(0, '#ffffff');
-          grad.addColorStop(0.7, '#e2e8f0');
+          grad.addColorStop(0.65, '#f1f5f9');
           grad.addColorStop(1.0, '#cbd5e1');
 
           ctx.fillStyle = grad;
@@ -1009,82 +1010,118 @@
         }
       }
 
-      // Geometrik Pentagonal / Truvis Spor Deseni (Modern Golf Battle Tarzı)
-      const drawPentagon = (px, py, r, color, borderColor = '#0f172a') => {
-        ctx.fillStyle = color;
+      // 3. Şık Geometrik Spor Okları & Elmas Motifleri (Geometric Cross-Arrow Emblem)
+      function drawGeometricCluster(cx, cy, scale = 1.0, rot = 0) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.scale(scale, scale);
+
+        // İnce altın halka
+        ctx.strokeStyle = '#eab308';
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const angle = (i * 2 * Math.PI / 5) - Math.PI / 2;
-          const x = px + r * Math.cos(angle);
-          const y = py + r * Math.sin(angle);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        ctx.arc(0, 0, 36, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 4 Yönlü Keskin Kanat / Elmas Şekilleri (Antrasit ve Yakut Kırmızı)
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          ctx.save();
+          ctx.rotate(a);
+
+          // Ana antrasit dış kanat
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.moveTo(0, 8);
+          ctx.lineTo(9, 24);
+          ctx.lineTo(0, 34);
+          ctx.lineTo(-9, 24);
+          ctx.closePath();
+          ctx.fill();
+
+          // İç kırmızı spor vurgusu
+          ctx.fillStyle = '#dc2626';
+          ctx.beginPath();
+          ctx.moveTo(0, 14);
+          ctx.lineTo(4, 23);
+          ctx.lineTo(0, 28);
+          ctx.lineTo(-4, 23);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.restore();
         }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-      };
 
-      // Turnuva desen panelleri
-      const patches = [
-        { x: 128, y: 120, r: 38, col: '#0284c7' }, // Electric Azure
-        { x: 384, y: 120, r: 38, col: '#ef4444' }, // Coral Red
-        { x: 128, y: 392, r: 38, col: '#8b5cf6' }, // Royal Violet
-        { x: 384, y: 392, r: 38, col: '#f59e0b' }, // Amber Gold
-        { x: 256, y: 60,  r: 28, col: '#10b981' }, // Emerald
-        { x: 256, y: 452, r: 28, col: '#ec4899' }, // Neon Pink
-        { x: 40,  y: 256, r: 26, col: '#06b6d4' }, // Cyan
-        { x: 472, y: 256, r: 26, col: '#f97316' }  // Orange
-      ];
-      patches.forEach(p => drawPentagon(p.x, p.y, p.r, p.col));
-
-      // Ekvator Çizgileri & Hız Okları (Equator Stripe & Speed Chevrons)
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 240, 512, 32);
-
-      // Çift altın ince şerit
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(0, 237, 512, 3);
-      ctx.fillRect(0, 272, 512, 3);
-
-      // Beyaz Oklar (Speed Chevrons)
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3.5;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      for (let x = 32; x < 512; x += 64) {
+        // Merkez altın noktası
+        ctx.fillStyle = '#0f172a';
         ctx.beginPath();
-        ctx.moveTo(x - 8, 248);
-        ctx.lineTo(x + 4, 256);
-        ctx.lineTo(x - 8, 264);
-        ctx.stroke();
+        ctx.arc(0, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#eab308';
+        ctx.beginPath();
+        ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       }
 
-      // Merkez Rozet: "VELOCITY 9" ve Yıldızlar
-      ctx.fillStyle = '#0f172a';
+      // 4 Simetrik Şık Küme
+      drawGeometricCluster(128, 128, 0.95, 0);
+      drawGeometricCluster(384, 128, 0.95, Math.PI / 4);
+      drawGeometricCluster(128, 384, 0.95, Math.PI / 4);
+      drawGeometricCluster(384, 384, 0.95, 0);
+
+      // 4. İnce Ekvator Hedefleme Çizgisi (Triple-Track Tour Alignment)
+      const eqY = 256;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 2.0;
       ctx.beginPath();
-      ctx.arc(256, 185, 36, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 3;
+      ctx.moveTo(0, eqY - 14);
+      ctx.lineTo(512, eqY - 14);
       ctx.stroke();
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 13px -apple-system, sans-serif';
+      ctx.beginPath();
+      ctx.moveTo(0, eqY + 14);
+      ctx.lineTo(512, eqY + 14);
+      ctx.stroke();
+
+      // Merkezde kırmızı ince hizalama hattı
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(0, eqY);
+      ctx.lineTo(512, eqY);
+      ctx.stroke();
+
+      // İleri Hız Okları (Forward Chevrons)
+      for (let x = 32; x < 512; x += 64) {
+        ctx.fillStyle = '#dc2626';
+        ctx.beginPath();
+        ctx.moveTo(x - 5, eqY - 9);
+        ctx.lineTo(x + 5, eqY);
+        ctx.lineTo(x - 5, eqY + 9);
+        ctx.lineTo(x - 2, eqY);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 5. Şık "TOUR PRO • 1" Markalaması
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('VELOCITY', 256, 175);
+      ctx.fillText('TOUR PRO', 256, 70);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 22px -apple-system, sans-serif';
+      ctx.fillText('1', 256, 92);
 
-      ctx.fillStyle = '#facc15';
-      ctx.font = '900 24px -apple-system, sans-serif';
-      ctx.fillText('9', 256, 196);
-
-      // Alt Rozet: Yıldızlar
-      ctx.fillStyle = '#facc15';
-      ctx.font = '16px -apple-system, sans-serif';
-      ctx.fillText('★★★', 256, 325);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.fillText('TOUR PRO', 256, 420);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 22px -apple-system, sans-serif';
+      ctx.fillText('1', 256, 442);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
@@ -1116,16 +1153,16 @@
     ballShadow.rotation.x = -Math.PI / 2;
     scene.add(ballShadow);
 
-    // --- Gerçekçi ve Zengin Golf Sahası Doğal Ortamı (Championship Golf Resort Environment) ---
+    // --- Gerçekçi ve Zengin Golf Sahası Doğal Ortamı (Championship Alpine Golf Resort Environment) ---
     function buildGolfEnvironment() {
       const envGroup = new THREE.Group();
       scene.add(envGroup);
 
-      // 1. Geniş Çim Taban (Lush Emerald Rough Ground)
-      const bgGeo = new THREE.PlaneGeometry(240, 240);
+      // 1. Canlı ve Zengin Turnuva Dış Çim Tabanı (Vibrant Championship Rough)
+      const bgGeo = new THREE.PlaneGeometry(280, 280);
       const bgMat = new THREE.MeshStandardMaterial({
-        color: 0x186b22,
-        roughness: 0.95,
+        color: 0x1d8a29, // Canlı, zengin ve taze çim zümrüdü
+        roughness: 0.92,
         metalness: 0.02
       });
       const bg = new THREE.Mesh(bgGeo, bgMat);
@@ -1134,10 +1171,196 @@
       bg.receiveShadow = true;
       envGroup.add(bg);
 
-      // 2. Doğal Golf Tepeleri / Kanyon Sırtları (Rolling Hills / Knolls)
-      const hillMat1 = new THREE.MeshStandardMaterial({ color: 0x1e7828, roughness: 0.9 });
-      const hillMat2 = new THREE.MeshStandardMaterial({ color: 0x248630, roughness: 0.9 });
-      const hillMat3 = new THREE.MeshStandardMaterial({ color: 0x165d1e, roughness: 0.9 });
+      // 2. Görkemli Kar Kaplı Ufuk Dağ Sıraları (Panoramic Snow-Capped Mountain Range)
+      const mountainGroup = new THREE.Group();
+      envGroup.add(mountainGroup);
+
+      const rockMat1 = new THREE.MeshStandardMaterial({ color: 0x364858, roughness: 0.92 });
+      const rockMat2 = new THREE.MeshStandardMaterial({ color: 0x485c6e, roughness: 0.92 });
+      const rockMat3 = new THREE.MeshStandardMaterial({ color: 0x2c3b49, roughness: 0.92 });
+      const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.45, metalness: 0.04 });
+      const foothillMat = new THREE.MeshStandardMaterial({ color: 0x1e4a2b, roughness: 0.9 });
+
+      function createMountainPeak(mx, mz, radius = 24, height = 34, rMat = rockMat1) {
+        const m = new THREE.Group();
+        m.position.set(mx, -0.6, mz);
+
+        // Ana Dağ Gövdesi (Low-poly 7 köşeli keskin dağ piramidi)
+        const rockGeo = new THREE.ConeGeometry(radius, height, 7);
+        const rockMesh = new THREE.Mesh(rockGeo, rMat);
+        rockMesh.position.y = height * 0.5;
+        rockMesh.castShadow = false;
+        rockMesh.receiveShadow = true;
+        m.add(rockMesh);
+
+        // Zirve Kar Başlığı (Dağın üst %35'ini örten kar örtüsü)
+        const snowH = height * 0.36;
+        const snowR = radius * 0.36;
+        const snowGeo = new THREE.ConeGeometry(snowR, snowH, 7);
+        const snowMesh = new THREE.Mesh(snowGeo, snowMat);
+        snowMesh.position.y = height - snowH * 0.5 + 0.05;
+        snowMesh.receiveShadow = true;
+        m.add(snowMesh);
+
+        mountainGroup.add(m);
+      }
+
+      function createFoothillRidge(fx, fz, rx = 18, ry = 12, rz = 18) {
+        const hill = new THREE.Mesh(new THREE.ConeGeometry(rx, ry, 6), foothillMat);
+        hill.position.set(fx, ry * 0.5 - 0.5, fz);
+        hill.scale.set(1.0, 0.7, 1.2);
+        hill.receiveShadow = true;
+        mountainGroup.add(hill);
+      }
+
+      // Ufku Çevreleyen 14 Görkemli Dağ Zirvesi (R = 55m ... 105m)
+      const mountainData = [
+        // Kuzey / Arka Dağ Sıraları
+        { x: -50, z: 68, r: 26, h: 36, mat: rockMat1 },
+        { x: -18, z: 76, r: 32, h: 42, mat: rockMat2 },
+        { x: 16,  z: 78, r: 28, h: 38, mat: rockMat3 },
+        { x: 48,  z: 70, r: 26, h: 35, mat: rockMat1 },
+
+        // Doğu / Sağ Dağ Sıraları
+        { x: 74,  z: 38, r: 28, h: 37, mat: rockMat2 },
+        { x: 84,  z: 4,  r: 34, h: 42, mat: rockMat1 },
+        { x: 76,  z: -34, r: 28, h: 36, mat: rockMat3 },
+
+        // Güney / Ön Dağ Sıraları
+        { x: 46,  z: -68, r: 26, h: 35, mat: rockMat2 },
+        { x: 14,  z: -74, r: 32, h: 40, mat: rockMat1 },
+        { x: -22, z: -72, r: 28, h: 38, mat: rockMat3 },
+        { x: -56, z: -64, r: 26, h: 36, mat: rockMat2 },
+
+        // Batı / Sol Dağ Sıraları
+        { x: -78, z: -32, r: 28, h: 38, mat: rockMat1 },
+        { x: -86, z: 2,   r: 34, h: 44, mat: rockMat2 },
+        { x: -78, z: 36,  r: 28, h: 37, mat: rockMat3 }
+      ];
+      mountainData.forEach(md => createMountainPeak(md.x, md.z, md.r, md.h, md.mat));
+
+      // Ön Dağ Etekleri ve Yeşil Sırtlar
+      const foothills = [
+        [-32, 48, 16, 12, 16], [0, 56, 20, 14, 18], [34, 52, 18, 13, 16],
+        [56, 18, 18, 13, 18], [54, -18, 18, 12, 16], [28, -48, 16, 12, 16],
+        [-28, -48, 16, 12, 16], [-54, -16, 18, 13, 16], [-52, 22, 18, 13, 16]
+      ];
+      foothills.forEach(([fx, fz, rx, ry, rz]) => createFoothillRidge(fx, fz, rx, ry, rz));
+
+      // 3. Kıvrımlı Dağ Akarsuyu / Nehir (Meandering Alpine River Hazard & Animated Stream)
+      const riverGroup = new THREE.Group();
+      envGroup.add(riverGroup);
+
+      function createRiverWaterTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        const grad = ctx.createLinearGradient(0, 0, 256, 256);
+        grad.addColorStop(0.0, '#00b4d8');
+        grad.addColorStop(0.45, '#0077b6');
+        grad.addColorStop(1.0, '#023e8a');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Su köpüğü ve akıntı çizgileri
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.lineWidth = 2.4;
+        for (let y = 14; y < 256; y += 28) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(64, y - 8, 128, y + 8, 192, y - 6);
+          ctx.lineTo(256, y + 4);
+          ctx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(2, 6);
+        return tex;
+      }
+
+      const riverWaterTex = createRiverWaterTexture();
+      const riverWaterMat = new THREE.MeshStandardMaterial({
+        map: riverWaterTex,
+        color: 0x22c5ff,
+        roughness: 0.08,
+        metalness: 0.82,
+        transparent: true,
+        opacity: 0.90
+      });
+      envRiverTex = riverWaterTex;
+
+      // Kıvrımlı Nehir Yolu Eğrisi
+      const riverPoints = [
+        new THREE.Vector3(26, -0.06, -38),
+        new THREE.Vector3(21, -0.06, -22),
+        new THREE.Vector3(16, -0.06, -7),
+        new THREE.Vector3(17.5, -0.06, 8),
+        new THREE.Vector3(22, -0.06, 24),
+        new THREE.Vector3(28, -0.06, 38)
+      ];
+      const riverCurve = new THREE.CatmullRomCurve3(riverPoints);
+      const riverGeo = new THREE.TubeGeometry(riverCurve, 40, 2.2, 8, false);
+      riverGeo.scale(1, 0.05, 1);
+      const riverMesh = new THREE.Mesh(riverGeo, riverWaterMat);
+      riverMesh.position.y = 0.02;
+      riverGroup.add(riverMesh);
+
+      // Nehir Kumsal Yatağı
+      const riverBedGeo = new THREE.TubeGeometry(riverCurve, 40, 3.4, 8, false);
+      riverBedGeo.scale(1, 0.04, 1);
+      const riverBedMat = new THREE.MeshStandardMaterial({ color: 0xd6bf82, roughness: 0.95 });
+      const riverBedMesh = new THREE.Mesh(riverBedGeo, riverBedMat);
+      riverBedMesh.position.y = 0.005;
+      riverBedMesh.receiveShadow = true;
+      riverGroup.add(riverBedMesh);
+
+      // Nehir Kenarı Doğal Çakıl Taşları & Kayalar
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x5b6b7a, roughness: 0.85 });
+      const stoneGeo = new THREE.DodecahedronGeometry(0.5, 1);
+      const riverStones = [
+        [22.5, -28, 0.7], [18.2, -18, 0.6], [14.0, -10, 0.8], [13.2, -4, 0.55],
+        [18.5, -2, 0.75], [14.8, 5, 0.6], [19.2, 12, 0.7], [23.5, 20, 0.85],
+        [16.2, -24, 0.5], [13.5, -14, 0.65], [19.8, 4, 0.55], [24.0, 15, 0.7]
+      ];
+      riverStones.forEach(([sx, sz, sr]) => {
+        const stone = new THREE.Mesh(stoneGeo, stoneMat);
+        stone.position.set(sx, sr * 0.4 - 0.05, sz);
+        stone.scale.set(sr * 1.3, sr * 0.7, sr * 1.1);
+        stone.rotation.set(Math.random(), Math.random(), Math.random());
+        stone.castShadow = true;
+        stone.receiveShadow = true;
+        riverGroup.add(stone);
+      });
+
+      // Nehir Üzerinde Ahşap Köprü (Rustik Golf Yürüyüş Köprüsü)
+      const bridgeGroup = new THREE.Group();
+      bridgeGroup.position.set(17.0, 0.12, 2.5);
+      bridgeGroup.rotation.y = -0.15;
+      const bridgeDeck = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 4.8), woodMat);
+      bridgeDeck.rotation.y = Math.PI / 2;
+      bridgeDeck.castShadow = true;
+      bridgeDeck.receiveShadow = true;
+      bridgeGroup.add(bridgeDeck);
+      const railGeo = new THREE.BoxGeometry(0.08, 0.45, 4.8);
+      const rail1 = new THREE.Mesh(railGeo, woodMat);
+      rail1.position.set(0, 0.25, -0.8);
+      rail1.rotation.y = Math.PI / 2;
+      rail1.castShadow = true;
+      bridgeGroup.add(rail1);
+      const rail2 = new THREE.Mesh(railGeo, woodMat);
+      rail2.position.set(0, 0.25, 0.8);
+      rail2.rotation.y = Math.PI / 2;
+      rail2.castShadow = true;
+      bridgeGroup.add(rail2);
+      riverGroup.add(bridgeGroup);
+
+      // 4. Doğal Golf Tepeleri / Höyükler (Rolling Hills / Knolls)
+      const hillMat1 = new THREE.MeshStandardMaterial({ color: 0x228b2e, roughness: 0.9 });
+      const hillMat2 = new THREE.MeshStandardMaterial({ color: 0x289934, roughness: 0.9 });
+      const hillMat3 = new THREE.MeshStandardMaterial({ color: 0x1a7525, roughness: 0.9 });
       const hillGeo = new THREE.SphereGeometry(1, 16, 12);
 
       const hills = [
@@ -1170,34 +1393,7 @@
         envGroup.add(hill);
       });
 
-      // 3. Uzak Su Engeli / Göl & Kumsal Sahil (Scenic Water Hazard & Sand Beach)
-      const pondGroup = new THREE.Group();
-      pondGroup.position.set(17.5, -0.06, -1.0);
-
-      const beachGeo = new THREE.RingGeometry(6.6, 8.4, 32);
-      const beachMat = new THREE.MeshStandardMaterial({ color: 0xd6c085, roughness: 0.95 });
-      const beach = new THREE.Mesh(beachGeo, beachMat);
-      beach.rotation.x = -Math.PI / 2;
-      beach.position.y = 0.002;
-      beach.receiveShadow = true;
-      pondGroup.add(beach);
-
-      const waterGeo = new THREE.CircleGeometry(6.8, 32);
-      const waterMat = new THREE.MeshStandardMaterial({
-        color: 0x168dc4,
-        roughness: 0.12,
-        metalness: 0.85,
-        transparent: true,
-        opacity: 0.88
-      });
-      const water = new THREE.Mesh(waterGeo, waterMat);
-      water.rotation.x = -Math.PI / 2;
-      water.position.y = 0.005;
-      water.receiveShadow = true;
-      pondGroup.add(water);
-      envGroup.add(pondGroup);
-
-      // 4. Doğal Dış Kum Havuzları (Rough Sand Bunkers)
+      // 5. Doğal Dış Kum Havuzları (Rough Sand Bunkers)
       const outerBunkers = [
         { x: -14.5, z: -7.0, rx: 2.8, rz: 1.8, rot: 0.3 },
         { x: -15.0, z: 11.0, rx: 3.2, rz: 2.0, rot: -0.4 }
@@ -1214,7 +1410,34 @@
         envGroup.add(bMesh);
       });
 
-      // 5. Doğal Golf Ağaçları & Çalılar (Pines, Leafy Oaks & Bushes)
+      // 6. Canlı Dağ Kır Çiçekleri (Wildflower Meadows)
+      const flowerGeo = new THREE.SphereGeometry(0.12, 5, 5);
+      const fMatYellow = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 });
+      const fMatLavender = new THREE.MeshStandardMaterial({ color: 0xc084fc, roughness: 0.6 });
+      const fMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+
+      const flowerPatches = [
+        [-8.5, -4.5, fMatYellow], [-9.2, 1.5, fMatLavender], [-8.2, 8.5, fMatWhite],
+        [-12.0, -9.0, fMatLavender], [-10.5, 12.0, fMatYellow], [-14.5, 3.0, fMatWhite],
+        [8.5, -5.0, fMatLavender], [9.2, 0.5, fMatWhite], [8.4, 7.5, fMatYellow],
+        [11.5, -10.0, fMatYellow], [12.5, 8.0, fMatLavender], [10.8, 15.0, fMatWhite],
+        [-4.0, 16.0, fMatYellow], [0.0, 17.5, fMatWhite], [4.5, 16.5, fMatLavender]
+      ];
+
+      flowerPatches.forEach(([fx, fz, mat]) => {
+        const cluster = new THREE.Group();
+        cluster.position.set(fx, 0, fz);
+        for (let i = 0; i < 5; i++) {
+          const fl = new THREE.Mesh(flowerGeo, mat);
+          const ox = (Math.random() - 0.5) * 0.9;
+          const oz = (Math.random() - 0.5) * 0.9;
+          fl.position.set(ox, 0.16 + Math.random() * 0.08, oz);
+          cluster.add(fl);
+        }
+        envGroup.add(cluster);
+      });
+
+      // 7. Doğal Golf Ağaçları & Çalılar (Pines, Leafy Oaks & Bushes)
       const pineFoliageMat1 = new THREE.MeshStandardMaterial({ color: 0x155822, roughness: 0.75 });
       const pineFoliageMat2 = new THREE.MeshStandardMaterial({ color: 0x1b6d2a, roughness: 0.75 });
       const leafFoliageMat1 = new THREE.MeshStandardMaterial({ color: 0x2e8334, roughness: 0.70 });
@@ -1310,7 +1533,7 @@
         { type: 'pine', x: -17.0, z: -10.0, s: 1.1 },
         { type: 'leaf', x: -18.5, z: 17.0,  s: 1.2 },
 
-        // Sağ vadi ve gölet kenarı ağaçları
+        // Sağ vadi ve nehir kenarı ağaçları
         { type: 'leaf', x: 9.0,   z: -8.0,  s: 1.1 },
         { type: 'pine', x: 10.5,  z: -4.5,  s: 1.2 },
         { type: 'leaf', x: 9.5,   z: 2.0,   s: 1.0 },
@@ -1350,7 +1573,7 @@
       ];
       bushCoords.forEach(([bx, bz, br]) => createBush(bx, bz, br));
 
-      // 6. Gökyüzü Bulutları (Drifting Procedural Clouds)
+      // 8. Gökyüzü Bulutları (Drifting Procedural Clouds)
       const cloudMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         roughness: 0.9,
@@ -1473,11 +1696,24 @@
     let lastGroundY = 0.1;
 
     function getGroundHeight(x, z, fallbackY = null) {
-      downRayOrigin.set(x, 10.0, z);
+      downRayOrigin.set(x, 15.0, z);
       downRay.set(downRayOrigin, downRayDir);
-      const hits = downRay.intersectObjects(floorMeshes, false);
+      let hits = downRay.intersectObjects(floorMeshes, false);
       if (hits.length > 0) {
         return hits[0].point.y;
+      }
+      // Mikro-derz / karo birleşim dikişlerinde dikey ışının boşluğa düşmesini önleyen mikro örnekleme
+      const offsets = [
+        [0.025, 0], [-0.025, 0], [0, 0.025], [0, -0.025],
+        [0.035, 0.035], [-0.035, -0.035]
+      ];
+      for (let i = 0; i < offsets.length; i++) {
+        downRayOrigin.set(x + offsets[i][0], 15.0, z + offsets[i][1]);
+        downRay.set(downRayOrigin, downRayDir);
+        hits = downRay.intersectObjects(floorMeshes, false);
+        if (hits.length > 0) {
+          return hits[0].point.y;
+        }
       }
       return fallbackY;
     }
@@ -2885,26 +3121,45 @@
       toCup.y = 0;
       const cupDist = toCup.length();
 
-      // Top zemin seviyesine yakın olmalı (yüksekten uçarken çekim olmaz)
-      const isNearTurf = cupDistY < 0.35;
+      // Top zemin seviyesine yakın olmalı
+      const isNearTurf = cupDistY < 0.45;
       if (!isNearTurf) return false;
 
-      // Eğer havadaysa fakat zemin seviyesine çok yakınsa ve düşük putt hızındaysa (< 3.8 m/s, ballVel.y < 0.8) düşüşe izin ver
-      if (isAirborne && (curBallSpeed > 3.8 || ballVel.y > 0.8 || cupDistY > 0.20)) {
+      // Eğer havadaysa fakat zemin seviyesine çok yakınsa (< 0.25) ve makul putt hızındaysa izin ver
+      if (isAirborne && (curBallSpeed > 3.8 || ballVel.y > 0.8 || cupDistY > 0.25)) {
         return false;
       }
 
-      // 1. DÜŞÜK HIZ KALİBRASYONU (v < 2.5 m/s):
-      // Nazik dokunuşlar, kısa putt'lar ve delik kenarından geçen toplar için hassas çekim ve anında batma
-      if (curBallSpeed < 2.5) {
-        if (cupDist < 0.65) {
-          const pull = 22.0 * (1.0 - cupDist / 0.65);
+      // 1. DÜŞÜK HIZ KALİBRASYONU (v < 2.8 m/s):
+      // Nazik dokunuşlar, kısa putt'lar ve delik kenarından geçen toplar için kusursuz delik çekimi
+      if (curBallSpeed < 2.8) {
+        if (cupDist < 0.80) {
+          const pull = 32.0 * (1.0 - cupDist / 0.80);
+          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
+          ballVel.multiplyScalar(Math.pow(0.92, stepDt * 60));
+        }
+
+        // Topun delik kenarına veya üstüne gelmesi: Doğrudan kupa içine düşer
+        if (cupDist < 0.40 || (curBallSpeed < 1.0 && cupDist < 0.44) || (curBallSpeed < 0.25 && cupDist < 0.48)) {
+          isSinking = true;
+          isInHole = true;
+          isMoving = false;
+          isAirborne = false;
+          sinkFallVel = 0;
+          playHoleIn();
+          setTimeout(showHoleModal, 900);
+          return true;
+        }
+      }
+      // 2. ORTA PUTT HIZI KALİBRASYONU (2.8 <= v < 4.2 m/s):
+      else if (curBallSpeed < 4.2) {
+        if (cupDist < 0.55) {
+          const pull = 20.0 * (1.0 - cupDist / 0.55);
           ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
           ballVel.multiplyScalar(Math.pow(0.96, stepDt * 60));
         }
 
-        // Topun gövdesi delik çemberine (kupa yarıçapı 0.21m + top yarıçapı 0.12m = 0.33m) temas ettiğinde içeri düşer:
-        if (cupDist < 0.35) {
+        if (cupDist < 0.32) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
@@ -2915,33 +3170,14 @@
           return true;
         }
       }
-      // 2. ORTA PUTT HIZI KALİBRASYONU (2.5 <= v < 4.0 m/s):
-      else if (curBallSpeed < 4.0) {
-        if (cupDist < 0.52) {
-          const pull = 16.0 * (1.0 - cupDist / 0.52);
-          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
-          ballVel.multiplyScalar(Math.pow(0.97, stepDt * 60));
-        }
-
-        if (cupDist < 0.29) {
-          isSinking = true;
-          isInHole = true;
-          isMoving = false;
-          isAirborne = false;
-          sinkFallVel = 0;
-          playHoleIn();
-          setTimeout(showHoleModal, 900);
-          return true;
-        }
-      }
-      // 3. HIZLI PUTT KALİBRASYONU (4.0 <= v < 4.8 m/s):
-      else if (curBallSpeed < 4.8) {
+      // 3. HIZLI PUTT KALİBRASYONU (4.2 <= v < 5.0 m/s):
+      else if (curBallSpeed < 5.0) {
         if (cupDist < 0.40) {
-          const pull = 10.0 * (1.0 - cupDist / 0.40);
+          const pull = 12.0 * (1.0 - cupDist / 0.40);
           ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
         }
 
-        if (cupDist < 0.23) {
+        if (cupDist < 0.24) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
@@ -2952,8 +3188,6 @@
           return true;
         }
       }
-      // 4. AŞIRI HIZLI VURUŞLAR (v >= 4.8 m/s):
-      // Gerçekçilik: Hızlı fırlatılmış top deliğin üstünden zıplayıp/uçup geçer, delik içine çekilmez!
 
       return false;
     }
@@ -3059,14 +3293,12 @@
             if (landingGroundY === null && dCup < 0.45) {
               landingGroundY = holeCupPos.y;
             }
-            // Hole 9: SADECE kanyon boşluğu bölgesinde (z < 2.45) geriye doğru uçuşta rampaya tutunmayı engelle
-            // Ada üzerinde (z >= 2.45) normal iniş ve sekme güvenle çalışır
-            if (currentHole === 8 && ballVel.z < 0 && ballPos.z > -2.0 && ballPos.z < 2.45) {
-              landingGroundY = null;
+            if (landingGroundY === null && lastGroundY !== null) {
+              landingGroundY = lastGroundY;
             }
             if (landingGroundY !== null) {
               const expectedY = landingGroundY + ballRadius;
-              if (ballPos.y <= expectedY + 0.04 && ballPos.y >= expectedY - 0.50) {
+              if (ballPos.y <= expectedY + 0.04) {
                 ballPos.y = expectedY;
                 lastGroundY = landingGroundY;
                 // Gerçekçi golf topu sekmesi: Düşüş hızıyla orantılı doğal sekme
@@ -3091,6 +3323,9 @@
           const dCup = Math.hypot(ballPos.x - holeCupPos.x, ballPos.z - holeCupPos.z);
           if (groundY === null && dCup < 0.45) {
             groundY = holeCupPos.y; // 3D oyuk deliği üzerinde zemin seviyesi
+          }
+          if (groundY === null && lastGroundY !== null) {
+            groundY = lastGroundY; // Mikro derz aralarında zemini kaybetmez
           }
           if (groundY !== null) {
             ballPos.y = groundY + ballRadius;
@@ -3135,6 +3370,16 @@
             } else {
               ballVel.y = 0;
             }
+          }
+        }
+
+        // Zemin Altına Batma Önleme Güvencesi (Top deliğe girmediği sürece ASLA çim altına batamaz)
+        const safeFloorY = (getGroundHeight(ballPos.x, ballPos.z) ?? lastGroundY);
+        if (safeFloorY !== null && !isInHole && !isSinking) {
+          if (ballPos.y < safeFloorY + ballRadius) {
+            ballPos.y = safeFloorY + ballRadius;
+            if (ballVel.y < 0) ballVel.y = 0;
+            isAirborne = false;
           }
         }
 
@@ -3328,12 +3573,13 @@
       updatePhysics(dt);
       ballMesh.position.copy(ballPos);
 
-      // Topun zeminde fiziksel olarak yuvarlanma dönüşü (Gerçekçi dönen çukurcuklu top)
+      // Topun zeminde fiziksel olarak yuvarlanma dönüşü (Gerçekçi ileriye doğru dönen şampiyona topu)
       if (isMoving) {
         const speed = Math.hypot(ballVel.x, ballVel.z);
         if (speed > 0.005) {
           const rotAngle = (speed * dt) / ballRadius;
-          const rotAxis = new THREE.Vector3(-ballVel.z, 0, ballVel.x).normalize();
+          // İLERİYE DOĞRU DÖNÜŞ (Doğal yuvarlanma fiziği: Sağa el kuralı [Vz, 0, -Vx])
+          const rotAxis = new THREE.Vector3(ballVel.z, 0, -ballVel.x).normalize();
           ballMesh.rotateOnWorldAxis(rotAxis, rotAngle);
         }
       }
@@ -3372,6 +3618,11 @@
       // Gökyüzündeki 3D bulutların yavaş ve huzurlu akışı
       if (envClouds) {
         envClouds.rotation.y += 0.00025;
+      }
+
+      // Dağ akarsuyunun canlı akıntı akışı (Flowing downstream river water)
+      if (envRiverTex) {
+        envRiverTex.offset.y += 0.0022;
       }
 
       updateCamera(dt);
