@@ -730,6 +730,19 @@
       metalness: 0.02
     });
     // BoxGeometry yüzey dizilimi: [+X, -X, +Y(üst), -Y(alt), +Z, -Z]
+    // 45-Derece Açılı Köşe Pahları için Çift Taraflı (DoubleSide) Masif Ahşap Malzemeler
+    const wedgeMat = new THREE.MeshStandardMaterial({
+      map: woodTex,
+      roughness: 0.58,
+      metalness: 0.02,
+      side: THREE.DoubleSide
+    });
+    const wedgeTopMat = new THREE.MeshStandardMaterial({
+      map: woodRailTopTex,
+      roughness: 0.55,
+      metalness: 0.02,
+      side: THREE.DoubleSide
+    });
     const wallMaterials = [wallMat, wallMat, wallTopMat, wallMat, wallMat, wallMat];
     const sandMat = new THREE.MeshStandardMaterial({ color: 0xedd68a, roughness: 0.95, metalness: 0.0 });
     const boosterTex = createBoosterTexture();
@@ -2063,8 +2076,17 @@
     }
 
     
+    function isPointInTriangle2D(px, pz, x1, z1, x2, z2, x3, z3) {
+      const d1 = (px - x2) * (z1 - z2) - (x1 - x2) * (pz - z2);
+      const d2 = (px - x3) * (z2 - z3) - (x2 - x3) * (pz - z3);
+      const d3 = (px - x1) * (z3 - z1) - (x3 - x1) * (pz - z1);
+      const hasNeg = (d1 < -0.0001) || (d2 < -0.0001) || (d3 < -0.0001);
+      const hasPos = (d1 > 0.0001) || (d2 > 0.0001) || (d3 > 0.0001);
+      return !(hasNeg && hasPos);
+    }
+
     // --- Golf Battle 45-Derece Açılı Ahşap Köşe Pahları (Bank Corner Wedges) ---
-    // Topun köşelerde sıkışmasını önler ve açılı bant vuruşları (ricochet / bank shots) yapmayı sağlar!
+    // Altı, üstü ve tüm kenarları 100% kapalı, masif 3D üçgen prizma ahşap blok!
     function addCornerWedge(cx, cz, dirX, dirZ, size = 0.72, y = 0.29, h = 0.58) {
       const extraDepth = 0.35;
       const visualH = h + extraDepth;
@@ -2092,47 +2114,55 @@
         uvs.push(...uvA, ...uvB, ...uvC);
       }
 
-      // Group 0 (3 vertices): Üst Kapak (Top Cap) - wallTopMat (üst küpeşte)
-      if (dirX * dirZ > 0) {
-        addTri(T0, T2, T1, [0, 1, 0], [0, 0], [0, 1], [1, 0]);
-      } else {
-        addTri(T0, T1, T2, [0, 1, 0], [0, 0], [1, 0], [0, 1]);
+      function addQuadPoints(pBL, pBR, pTR, pTL, targetNorm, uvBL, uvBR, uvTR, uvTL) {
+        const v1x = pBR[0] - pBL[0], v1y = pBR[1] - pBL[1], v1z = pBR[2] - pBL[2];
+        const v2x = pTL[0] - pBL[0], v2y = pTL[1] - pBL[1], v2z = pTL[2] - pBL[2];
+        const cxNorm = v1y * v2z - v1z * v2y;
+        const cyNorm = v1z * v2x - v1x * v2z;
+        const czNorm = v1x * v2y - v1y * v2x;
+        const dot = cxNorm * targetNorm[0] + cyNorm * targetNorm[1] + czNorm * targetNorm[2];
+        if (dot >= 0) {
+          addTri(pBL, pBR, pTR, targetNorm, uvBL, uvBR, uvTR);
+          addTri(pBL, pTR, pTL, targetNorm, uvBL, uvTR, uvTL);
+        } else {
+          addTri(pBL, pTR, pBR, targetNorm, uvBL, uvTR, uvBR);
+          addTri(pBL, pTL, pTR, targetNorm, uvBL, uvTL, uvTR);
+        }
       }
 
-      // Group 1 (6 vertices): Çarpışma Yüzeyi (Front 45-deg Face) - wallMat
+      // Group 0 (3 vertices): Üst Kapak (Top Cap) - wedgeTopMat (üst ray pahı)
       if (dirX * dirZ > 0) {
-        addTri(T1, B1, T2, [nx, 0, nz], [0, 1], [0, 0], [1, 1]);
-        addTri(T2, B1, B2, [nx, 0, nz], [1, 1], [0, 0], [1, 0]);
+        addTri(T0, T2, T1, [0, 1, 0], [0.5, 0.5], [0, 1], [1, 0]);
       } else {
-        addTri(T1, T2, B1, [nx, 0, nz], [0, 1], [1, 1], [0, 0]);
-        addTri(T2, B2, B1, [nx, 0, nz], [1, 1], [1, 0], [0, 0]);
+        addTri(T0, T1, T2, [0, 1, 0], [0.5, 0.5], [1, 0], [0, 1]);
       }
 
-      // Group 1 (12 vertices): Arka Yan Yüzeyler (Back Faces against wall) - wallMat
-      if (dirZ > 0) {
-        addTri(T0, B0, T1, [0, 0, -dirZ], [0, 1], [0, 0], [1, 1]);
-        addTri(T1, B0, B1, [0, 0, -dirZ], [1, 1], [0, 0], [1, 0]);
+      // Group 1 (21 vertices): Masif Ahşap Yan ve Alt Yüzeyler - wedgeMat
+      // 1. Alt Kapak (Bottom Cap) - Tam Kapalı Masif Taban!
+      if (dirX * dirZ > 0) {
+        addTri(B0, B1, B2, [0, -1, 0], [0.5, 0.5], [1, 0], [0, 1]);
       } else {
-        addTri(T0, T1, B0, [0, 0, -dirZ], [0, 1], [1, 1], [0, 0]);
-        addTri(T1, B1, B0, [0, 0, -dirZ], [1, 1], [1, 0], [0, 0]);
+        addTri(B0, B2, B1, [0, -1, 0], [0.5, 0.5], [0, 1], [1, 0]);
       }
-      if (dirX > 0) {
-        addTri(T0, T2, B0, [-dirX, 0, 0], [0, 1], [1, 1], [0, 0]);
-        addTri(T2, B2, B0, [-dirX, 0, 0], [1, 1], [1, 0], [0, 0]);
-      } else {
-        addTri(T0, B0, T2, [-dirX, 0, 0], [0, 1], [0, 0], [1, 1]);
-        addTri(T2, B0, B2, [-dirX, 0, 0], [1, 1], [0, 0], [1, 0]);
-      }
+
+      // 2. Çarpışma ve Bant Yüzeyi (Front 45-deg Face)
+      addQuadPoints(B1, B2, T2, T1, [nx, 0, nz], [0, 0], [1, 0], [1, 1], [0, 1]);
+
+      // 3. Arka Yan Yüzey 1 (X eksenine paralel arka yüzey)
+      addQuadPoints(B0, B1, T1, T0, [0, 0, -dirZ], [0, 0], [1, 0], [1, 1], [0, 1]);
+
+      // 4. Arka Yan Yüzey 2 (Z eksenine paralel arka yüzey)
+      addQuadPoints(B0, B2, T2, T0, [-dirX, 0, 0], [0, 0], [1, 0], [1, 1], [0, 1]);
 
       geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
       geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
       geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
 
-      // Multi-material grupları: 0: wallTopMat (üst pah), 1: wallMat (yan ahşap)
+      // Multi-material grupları: 0: wedgeTopMat (üst ray pahı), 1: wedgeMat (masif ahşap yan/alt)
       geo.addGroup(0, 3, 0);
-      geo.addGroup(3, 18, 1);
+      geo.addGroup(3, 21, 1);
 
-      const mesh = new THREE.Mesh(geo, [wallTopMat, wallMat]);
+      const mesh = new THREE.Mesh(geo, [wedgeTopMat, wedgeMat]);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       courseGroup.add(mesh);
@@ -2145,6 +2175,11 @@
       const segDx = v2x - v1x;
       const segDz = v2z - v1z;
       const segLenSq = segDx * segDx + segDz * segDz;
+
+      const minX = Math.min(cx, v1x, v2x) - 0.25;
+      const maxX = Math.max(cx, v1x, v2x) + 0.25;
+      const minZ = Math.min(cz, v1z, v2z) - 0.25;
+      const maxZ = Math.max(cz, v1z, v2z) + 0.25;
 
       cornerWedges.push({
         cx: cx,
@@ -2163,6 +2198,10 @@
         nz: nz,
         midX: cx + dirX * size * 0.5,
         midZ: cz + dirZ * size * 0.5,
+        minX: minX,
+        maxX: maxX,
+        minZ: minZ,
+        maxZ: maxZ,
         yMin: yBot,
         yMax: yTop + 2.0
       });
@@ -2602,11 +2641,8 @@
       addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
       addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(5.09, 1.01, -1, 1, 0.85, 0.29, 0.58);
       addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
       addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
     }
@@ -2646,8 +2682,12 @@
       addWall(-2.42, 0.85, 7.45, 0.26, 0.60, 6.6);
       addWall(2.42, 0.85, 7.45, 0.26, 0.60, 6.6);
       addWall(0, 0.85, 10.65, 4.58, 0.60, 0.28);
-      addWall(-2.2, 0.85, 4.35, 0.52, 0.60, 0.26);
-      addWall(2.2, 0.85, 4.35, 0.52, 0.60, 0.26);
+      addWall(-2.22, 0.85, 4.35, 0.65, 0.60, 0.26);
+      addWall(2.22, 0.85, 4.35, 0.65, 0.60, 0.26);
+      addCornerWedge(-1.89, -7.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -7.49, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-2.29, 10.52, 1, -1, 0.75, 0.85, 0.60);
+      addCornerWedge(2.29, 10.52, -1, -1, 0.75, 0.85, 0.60);
       addBumper(-1.4, 0.65, 6.5, 0.4);
       addBumper(1.4, 0.65, 6.5, 0.4);
     }
@@ -2699,6 +2739,12 @@
       addWall(5.22, 0.29, 5.25, 0.26, 0.58, 9.0);
       addWall(1.78, 0.29, 6.85, 0.26, 0.58, 5.4);
       addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
+      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(5.09, 1.01, -1, 1, 0.85, 0.29, 0.58);
+      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
       addBumper(2.3, 0.1, 5.5, 0.38);
       addBumper(4.7, 0.1, 5.5, 0.38);
     }
@@ -2725,8 +2771,8 @@
       addCornerWedge(1.89, -7.19, -1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-2.29, 10.65, 1, -1, 0.75, 0.85, 0.60);
       addCornerWedge(2.29, 10.65, -1, -1, 0.75, 0.85, 0.60);
-      addWall(-2.2, 0.85, 4.25, 0.52, 0.60, 0.26);
-      addWall(2.2, 0.85, 4.25, 0.52, 0.60, 0.26);
+      addWall(-2.22, 0.85, 4.25, 0.65, 0.60, 0.26);
+      addWall(2.22, 0.85, 4.25, 0.65, 0.60, 0.26);
       addIce(0, 0.65, 5.8, 2.0, 2.0);
       addRotor(0, 0.65, 5.8);
       addBumper(-1.3, 0.65, 7.8, 0.38);
@@ -2765,6 +2811,10 @@
       addWall(3.23, 0.29, 7.6, 0.26, 0.58, 8.0);
       addWall(0, 0.29, 11.58, 6.72, 0.58, 0.26);
 
+      addCornerWedge(-2.10, -7.25, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.10, -7.25, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-3.10, 11.45, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(3.10, 11.45, -1, -1, 0.85, 0.29, 0.58);
       // Kupa çevresinde stratejik pinball sekme tamponları
       addBumper(-1.6, 0.1, 7.5, 0.40);
       addBumper(1.6, 0.1, 7.5, 0.40);
@@ -2777,6 +2827,8 @@
       addWall(-5.92, 0.29, -3.8, 0.26, 0.58, 7.7);
       addWall(-4.0, 0.18, -7.62, 3.58, 0.36, 0.26);
       addWall(-2.08, 0.29, -4.5, 0.26, 0.58, 6.0);
+      // Kademe 1 ile Kademe 2 arasındaki 1 metrelik duvar boşluğunu 100% kapatan ek bağlantı duvarı
+      addWall(-2.08, 0.29, -1.01, 0.26, 0.58, 1.05);
       addIce(-4.0, 0.1, -5.0, 1.8, 2.6);
 
       // 2. Kademe: Değirmenli orta geçiş (TÜM AÇIK KENARLAR KESİNTİSİZ KAPATILDI!)
@@ -2810,10 +2862,13 @@
       addWall(4.0, 0.85, 12.35, 5.18, 0.60, 0.28);
       addCornerWedge(-5.79, -7.49, 1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-2.21, -7.49, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-5.79, 2.79, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(5.79, -0.39, -1, 1, 0.85, 0.29, 0.58);
       addCornerWedge(1.41, 12.21, 1, -1, 0.75, 0.85, 0.60);
       addCornerWedge(6.59, 12.21, -1, -1, 0.75, 0.85, 0.60);
-      addWall(1.5, 0.85, 6.75, 0.52, 0.60, 0.26);
-      addWall(6.5, 0.85, 6.75, 0.52, 0.60, 0.26);
+      // Rampa bitişi ile kupa arenası girişi arasındaki yan boşlukları tam örten geniş kanat duvarları
+      addWall(1.68, 0.85, 6.75, 0.95, 0.60, 0.26);
+      addWall(6.32, 0.85, 6.75, 0.95, 0.60, 0.26);
       addBumper(2.4, 0.65, 8.2, 0.40);
       addBumper(5.6, 0.65, 8.2, 0.40);
       addBumper(4.0, 0.65, 11.2, 0.38);
@@ -3582,7 +3637,12 @@
         
         // Köşe Pahı Çarpışmaları: 45-derecelik açılı ahşap köşelerden kusursuz bant sekmesi!
         cornerWedges.forEach(w => {
-          if (ballPos.y < w.yMin || ballPos.y > w.yMax) return;
+          // Bounding Box Broad-phase: Top bu köşenin yakınında değilse anında atla (Işınlanma Kesinlikle Yok!)
+          if (ballPos.x < w.minX || ballPos.x > w.maxX ||
+              ballPos.z < w.minZ || ballPos.z > w.maxZ ||
+              ballPos.y < w.yMin || ballPos.y > w.yMax) {
+            return;
+          }
 
           // 1. Segment [V1, V2] üzerindeki en yakın noktayı hesapla
           const p1x = ballPos.x - w.v1x;
@@ -3597,16 +3657,20 @@
           const dz = ballPos.z - closeZ;
           const dist = Math.hypot(dx, dz);
 
-          // Topun köşenin iç tarafında olup olmadığını kontrol et
-          const dotNorm = (ballPos.x - w.midX) * w.nx + (ballPos.z - w.midZ) * w.nz;
+          // Topun köşenin üçgen gövdesi içine girip girmediğini kontrol et
+          const inTri = isPointInTriangle2D(ballPos.x, ballPos.z, w.cx, w.cz, w.v1x, w.v1z, w.v2x, w.v2z);
 
-          // Eğer top çarpma mesafesindeyse veya köşenin arkasına girmişse
-          if (dist < ballRadius || dotNorm < 0) {
+          // SADECE top köşeye gerçekten temas ettiğinde (mesafe < ballRadius) veya içeri girdiyse çarpışma uygula!
+          if (dist < ballRadius || inTri) {
             let colNx = w.nx;
             let colNz = w.nz;
-            if (dist > 0.0001 && dotNorm >= 0) {
-              colNx = dx / dist;
-              colNz = dz / dist;
+            if (dist > 0.0001 && !inTri) {
+              const ndx = dx / dist;
+              const ndz = dz / dist;
+              if (ndx * w.nx + ndz * w.nz > 0) {
+                colNx = ndx;
+                colNz = ndz;
+              }
             }
 
             const vDot = ballVel.x * colNx + ballVel.z * colNz;
@@ -3617,9 +3681,12 @@
               playBounce();
             }
 
-            // Topu köşe yüzeyinden güvenli mesafeye çıkar
-            ballPos.x = closeX + colNx * (ballRadius + 0.015);
-            ballPos.z = closeZ + colNz * (ballRadius + 0.015);
+            // Topu köşe yüzeyinden güvenli mesafeye çıkar (SADECE penetrasyon derinliği kadar it, asla uzak koordinatlara ışınlama!)
+            const pen = inTri ? (ballRadius + dist) : (ballRadius - dist);
+            if (pen > 0) {
+              ballPos.x += colNx * (pen + 0.005);
+              ballPos.z += colNz * (pen + 0.005);
+            }
           }
         });
 
