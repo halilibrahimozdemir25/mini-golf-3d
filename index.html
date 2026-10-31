@@ -1800,30 +1800,17 @@
       mesh.rotation.y = angle;
       courseGroup.add(mesh);
 
-      const halfL = length * 0.5;
-      const cosA = Math.cos(angle);
-      const sinA = Math.sin(angle);
-
-      // Uç noktaları hesapla (Three.js Euler Y dönüşü: x' = x*cos(ang), z' = -x*sin(ang))
-      const p1 = {
-        x: x - halfL * cosA,
-        z: z + halfL * sinA
-      };
-      const p2 = {
-        x: x + halfL * cosA,
-        z: z - halfL * sinA
-      };
-
       woodLogs.push({
         x: x,
         y: y + radius,
         z: z,
         baseY: y,
         length: length,
+        halfL: length * 0.5,
         radius: radius,
         angle: angle,
-        p1: p1,
-        p2: p2,
+        cosA: Math.cos(angle),
+        sinA: Math.sin(angle),
         mesh: mesh
       });
       return mesh;
@@ -1962,7 +1949,8 @@
       addWall(-1.78, 0.58, -3.12, 0.26, 1.15, 7.74);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
       addWall(-1.6, 0.58, 4.22, 7.45, 1.15, 0.28);
-      addWall(-0.13, 0.58, 0.88, 3.56, 1.15, 0.26);
+      // Orta koridor güney duvarı: x = -1.78'den x = 5.22'ye kadar 100% kesintisiz kapatıldı!
+      addWall(1.72, 0.58, 0.88, 7.00, 1.15, 0.26);
       addRotor(0.5, 0.1, 2.5);
       addSand(-1.0, 0.1, 2.5, 1.5, 1.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
@@ -2010,20 +1998,23 @@
 
     // --- Hole 6 (6. Zigzag Virajlar - Hassas Bant Vuruşları) ---
     function buildHole6() {
-      // Sol başlangıç koridoru
-      addFloor(-3.5, 0, -3.0, 3.4, 0.2, 7.6);
-      addWall(-5.22, 0.58, -3.0, 0.26, 1.15, 7.8);
+      // Sol başlangıç koridoru (z: -6.8'den 1.3'e)
+      addFloor(-3.5, 0, -2.75, 3.4, 0.2, 8.1);
+      addWall(-5.22, 0.58, -2.75, 0.26, 1.15, 8.2);
       addWall(-3.5, 0.18, -6.82, 3.18, 0.36, 0.26);
-      addWall(-1.78, 0.58, -3.6, 0.26, 1.15, 6.2);
+      addWall(-1.78, 0.58, -4.0, 0.26, 1.15, 5.4);
+
       // Orta geçiş koridoru (buzlu bağlantı)
       addFloor(0, 0, 0.0, 4.4, 0.2, 2.6);
       addIce(0, 0.1, 0.0, 2.2, 1.8);
-      addWall(0, 0.58, -1.32, 3.6, 1.15, 0.26);
-      addWall(0, 0.58, 1.32, 3.6, 1.15, 0.26);
-      // Sağ hedef koridoru
-      addFloorWithCupHole(3.5, 0, 3.0, 3.4, 0.2, 7.6, 3.5, 6.0, 0.21);
-      addWall(5.22, 0.58, 3.0, 0.26, 1.15, 7.8);
-      addWall(1.78, 0.58, 3.6, 0.26, 1.15, 6.2);
+      // Kesintisiz boydan boya Kuzey ve Güney çevre duvarları
+      addWall(-1.71, 0.58, 1.32, 7.02, 1.15, 0.26);
+      addWall(1.71, 0.58, -1.32, 7.02, 1.15, 0.26);
+
+      // Sağ hedef koridoru (z: -1.3'ten 6.8'e)
+      addFloorWithCupHole(3.5, 0, 2.75, 3.4, 0.2, 8.1, 3.5, 6.0, 0.21);
+      addWall(5.22, 0.58, 2.75, 0.26, 1.15, 8.2);
+      addWall(1.78, 0.58, 4.0, 0.26, 1.15, 5.4);
       addWall(3.5, 0.58, 6.82, 3.18, 1.15, 0.26);
       addSand(3.5, 0.1, 1.2, 1.4, 1.4);
       addBumper(-3.5, 0.1, -0.6, 0.4);
@@ -2038,7 +2029,8 @@
       addIce(-3.5, 0.1, -1.0, 1.8, 2.8);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
       addWall(-1.6, 0.58, 4.22, 7.45, 1.15, 0.28);
-      addWall(-0.13, 0.58, 0.88, 3.56, 1.15, 0.26);
+      // Orta koridor güney duvarı: x = -1.78'den x = 5.22'ye kadar 100% kesintisiz kapatıldı!
+      addWall(1.72, 0.58, 0.88, 7.00, 1.15, 0.26);
       addIce(0.0, 0.1, 2.5, 2.6, 2.2);
       addRotor(0.0, 0.1, 2.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
@@ -2085,24 +2077,28 @@
 
       // 2. Dik kalkış tramplini & rampanın yüksek yan koruma duvarları
       addJumpRamp(0, 0.47, -0.8, 3.8, 0.2, 3.4, -0.28);
-      // Rampa yan duvarları: topun rampanın yanından kayıp düşmesini kesin engeller
       addWall(-2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
       addWall(2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
 
-      // 3. Vadi zemin bağlantısı (Açık kanyon yerine dikişsiz emniyet vadisi - ASLA boşluk yok!)
-      addFloor(0, 0.1, 1.7, 5.2, 0.2, 2.2);
+      // Tramplin altı katı ahşap blokaj (Top asla rampa altına veya boşluğa kaçamaz!)
+      addWall(0, 0.47, 0.90, 3.8, 0.94, 0.26);
 
-      // Rampadan adaya geçiş yüksek yan duvarları (Tamamen kapalı koridor)
-      addWall(-2.67, 1.10, 1.7, 1.4, 1.40, 1.8);
-      addWall(2.67, 1.10, 1.7, 1.4, 1.40, 1.8);
+      // 3. Kesintisiz kurtarma zemini ve rampadan adaya geçiş (z: 0.9'dan 2.5'e, y: 0.1'den 0.65'e yükselen güvenli rampa)
+      const recRamp = addFloor(0, 0.375, 1.7, 6.4, 0.2, 1.8);
+      recRamp.rotation.x = -0.34;
+      recRamp.updateMatrixWorld(true);
+
+      // Rampa çıkışından ada duvarlarına birleşen kesintisiz geçiş kanatları
+      addWall(-2.67, 1.15, 0.90, 1.35, 1.40, 0.26);
+      addWall(2.67, 1.15, 0.90, 1.35, 1.40, 0.26);
 
       // 4. Ada Fairway ve Green
       addFloor(0, 0.65, 5.2, 6.4, 0.2, 5.4);
       addFloorWithCupHole(0, 0.65, 10.3, 6.4, 0.2, 5.4, 0, 10.2, 0.21);
 
-      // Ada yüksek çevre duvarları (H = 1.35m)
-      addWall(-3.32, 1.25, 7.8, 0.26, 1.35, 11.0);
-      addWall(3.32, 1.25, 7.8, 0.26, 1.35, 11.0);
+      // Ada ve vadi boyunca kesintisiz yüksek çevre duvarları (H = 1.35m - Boydan boya kapalı!)
+      addWall(-3.32, 1.25, 7.0, 0.26, 1.35, 12.6);
+      addWall(3.32, 1.25, 7.0, 0.26, 1.35, 12.6);
       addWall(0, 1.25, 13.22, 6.38, 1.35, 0.26);
 
       // Ada üzerindeki yönlendirici pinball tamponları
@@ -2118,12 +2114,22 @@
       addWall(-4.0, 0.18, -7.62, 3.58, 0.36, 0.26);
       addWall(-2.08, 0.58, -4.5, 0.26, 1.15, 6.0);
       addIce(-4.0, 0.1, -5.0, 1.8, 2.6);
-      // 2. Kademe: Değirmenli orta geçiş
+
+      // 2. Kademe: Değirmenli orta geçiş (TÜM AÇIK KENARLAR KESİNTİSİZ KAPATILDI!)
       addFloor(0, 0, 1.2, 11.6, 0.2, 3.4);
+      // Sol kenar duvarı (z: 0.05'ten 2.92'ye)
+      addWall(-5.92, 0.58, 1.48, 0.26, 1.15, 2.9);
+      // Ön (Kuzey) duvar
       addWall(-2.0, 0.58, 2.92, 8.2, 1.15, 0.28);
+      // Arka (Güney) duvar - kalkış çıkışı ve sağ geçiş boydan boya
       addWall(0.0, 0.58, -0.52, 4.0, 1.15, 0.26);
+      addWall(3.9, 0.58, -0.52, 3.8, 1.15, 0.26);
+      // Sağ (Doğu) kenar duvarı
+      addWall(5.92, 0.58, 1.09, 0.26, 1.15, 3.25);
+
       addRotor(-1.5, 0.1, 1.2);
       addIce(1.5, 0.1, 1.2, 2.0, 2.0);
+
       // 3. Kademe: Yüksek zirveye tırmanış rampası
       const ramp = addFloor(4.0, 0.275, 4.8, 3.6, 0.2, 4.2);
       ramp.rotation.x = -0.13;
@@ -2132,6 +2138,7 @@
       rw1.rotation.x = -0.13;
       const rw2 = addWall(5.92, 0.80, 4.8, 0.26, 1.20, 4.3);
       rw2.rotation.x = -0.13;
+
       // 4. Kademe: Şampiyonlar Zirvesi Kupa Arenası (y: 0.65)
       addFloorWithCupHole(4.0, 0.55, 9.5, 5.2, 0.2, 5.5, 4.0, 9.5, 0.21);
       addWall(1.28, 1.18, 9.5, 0.26, 1.25, 5.7);
@@ -2430,7 +2437,7 @@
       });
     }
 
-    // --- Golf Battle Uzun Odun / Kütük Çarpışma Çözümleyici (Capsule Collider) ---
+    // --- Golf Battle Uzun Odun / Kütük Çarpışma Çözümleyici (Milimetrik Hassas Silindir Fiziği) ---
     function resolveWoodLogCollisions() {
       woodLogs.forEach(log => {
         // Dikey yükseklik kontrolü: Top kütüğün üzerinden güvenle uçuyorsa çarpışma sayılmaz
@@ -2441,33 +2448,54 @@
           return;
         }
 
-        const dx = log.p2.x - log.p1.x;
-        const dz = log.p2.z - log.p1.z;
-        const lenSq = dx * dx + dz * dz;
-        if (lenSq < 0.0001) return;
+        const dx = ballPos.x - log.x;
+        const dz = ballPos.z - log.z;
 
-        const bx = ballPos.x - log.p1.x;
-        const bz = ballPos.z - log.p1.z;
-        const t = Math.max(0, Math.min(1, (bx * dx + bz * dz) / lenSq));
-        const qx = log.p1.x + t * dx;
-        const qz = log.p1.z + t * dz;
+        // Kütüğün yerel eksenine dönüştür (localX: kütük gövdesi, localZ: kütük kalınlığı)
+        const localX = dx * log.cosA - dz * log.sinA;
+        const localZ = dx * log.sinA + dz * log.cosA;
 
-        const distX = ballPos.x - qx;
-        const distZ = ballPos.z - qz;
-        const dist = Math.hypot(distX, distZ);
-        const minDist = log.radius + ballRadius;
+        // Silindirin düz kesit uçları (-halfL ... +halfL) ve silindirik gövdesi (-radius ... +radius)
+        const cx = Math.max(-log.halfL, Math.min(log.halfL, localX));
+        const cz = Math.max(-log.radius, Math.min(log.radius, localZ));
 
-        if (dist < minDist && dist > 0.0001) {
-          const nx = distX / dist;
-          const nz = distZ / dist;
-          ballPos.x = qx + nx * (minDist + 0.008);
-          ballPos.z = qz + nz * (minDist + 0.008);
+        const diffX = localX - cx;
+        const diffZ = localZ - cz;
+        const dist = Math.hypot(diffX, diffZ);
 
-          const dot = ballVel.x * nx + ballVel.z * nz;
+        // YALNIZCA topun yüzeyi kütüğe tam temas ettiğinde çarpışma tetiklenir (Sıfır hayalet alan!)
+        if (dist < ballRadius) {
+          let normLocalX = 0;
+          let normLocalZ = 0;
+          let overlap = ballRadius - dist;
+
+          if (dist > 0.0001) {
+            normLocalX = diffX / dist;
+            normLocalZ = diffZ / dist;
+          } else {
+            // Top merkezinin kütük içine doğrudan girmesi durumu
+            if (Math.abs(localZ) / log.radius > Math.abs(localX) / log.halfL) {
+              normLocalZ = Math.sign(localZ) || 1;
+              overlap = log.radius + ballRadius - Math.abs(localZ);
+            } else {
+              normLocalX = Math.sign(localX) || 1;
+              overlap = log.halfL + ballRadius - Math.abs(localX);
+            }
+          }
+
+          // Normal vektörü dünya koordinatlarına geri dönüştür
+          const normWorldX = normLocalX * log.cosA + normLocalZ * log.sinA;
+          const normWorldZ = -normLocalX * log.sinA + normLocalZ * log.cosA;
+
+          // Topu ahşap yüzeyin tam sınırına çıkar
+          ballPos.x += normWorldX * (overlap + 0.002);
+          ballPos.z += normWorldZ * (overlap + 0.002);
+
+          const dot = ballVel.x * normWorldX + ballVel.z * normWorldZ;
           if (dot < 0) {
             // Ahşap kütük elastik sekme katsayısı
-            ballVel.x = (ballVel.x - 1.85 * dot * nx) * 0.82;
-            ballVel.z = (ballVel.z - 1.85 * dot * nz) * 0.82;
+            ballVel.x = (ballVel.x - 1.82 * dot * normWorldX) * 0.82;
+            ballVel.z = (ballVel.z - 1.82 * dot * normWorldZ) * 0.82;
             // Hızlı çarpmada gerçekçi hafif sekme hoplaması
             if (ballVel.length() > 3.0 && !isAirborne) {
               ballVel.y = Math.min(ballVel.length() * 0.14, 1.8);
