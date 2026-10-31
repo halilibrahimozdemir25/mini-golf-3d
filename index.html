@@ -757,6 +757,78 @@
     const treeMat = new THREE.MeshStandardMaterial({ color: 0x1f7332, roughness: 0.7 });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a391c, roughness: 0.8 });
 
+    // --- Procedural Golf Battle Ağaç Kütüğü Kesit Dokusu (Log Tree Rings End Cap) ---
+    function createWoodLogEndTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // Doğal çam kütüğü açık taban rengi
+      ctx.fillStyle = '#c99661';
+      ctx.fillRect(0, 0, 256, 256);
+
+      const cx = 128, cy = 128;
+
+      // 1. Dış kabuk koyu halkası (Outer bark ring)
+      ctx.fillStyle = '#3a1f0a';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 126, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#b8814c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 116, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Yıllık büyüme halkaları (Tree growth rings)
+      const numRings = 9;
+      for (let i = 1; i <= numRings; i++) {
+        const r = (i / numRings) * 110;
+        ctx.strokeStyle = (i % 2 === 0) ? 'rgba(92, 49, 17, 0.75)' : 'rgba(125, 71, 28, 0.55)';
+        ctx.lineWidth = 2.8;
+        ctx.beginPath();
+        for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.1) {
+          const wobble = Math.sin(a * 5 + i) * 1.8 + Math.cos(a * 3) * 1.2;
+          const x = cx + (r + wobble) * Math.cos(a);
+          const y = cy + (r + wobble) * Math.sin(a);
+          if (a === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+
+      // 3. Merkez öz odun (Dark center pith)
+      ctx.fillStyle = '#5c2d0c';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 4. Kılcal kuruma çatlakları (Radial drying cracks)
+      ctx.strokeStyle = 'rgba(60, 28, 8, 0.65)';
+      ctx.lineWidth = 1.4;
+      const crackAngles = [0.4, 1.8, 3.5, 4.9];
+      crackAngles.forEach(ang => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        const len = 42 + ((ang * 17) % 45);
+        ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
+        ctx.stroke();
+      });
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy() || 8;
+      return tex;
+    }
+
+    const logEndTex = createWoodLogEndTexture();
+    const logEndMat = new THREE.MeshStandardMaterial({
+      map: logEndTex,
+      roughness: 0.65,
+      metalness: 0.02
+    });
+    const logBarkMat = woodMat;
+
     // --- Procedural Golf Battle Snowy Valley Çatlak Mozaik Buz Dokusu ---
     function createIceTexture() {
       const canvas = document.createElement('canvas');
@@ -1137,6 +1209,7 @@
 
     let colliders = [];
     let treeColliders = [];
+    let woodLogs = [];
     let speedBoosters = [];
     let sandTraps = [];
     let bumpers = [];
@@ -1204,7 +1277,8 @@
         name: "3. Değirmen & Kum Tuzağı",
         par: 3,
         spawn: new THREE.Vector3(-3.5, 0.22, -6),
-        cup: new THREE.Vector3(3.5, 0.1, 7.5)
+        cup: new THREE.Vector3(3.5, 0.1, 7.5),
+        initYaw: 0
       },
       {
         name: "4. Çift Buz Geçidi",
@@ -1222,13 +1296,15 @@
         name: "6. Zigzag Virajlar",
         par: 3,
         spawn: new THREE.Vector3(-3.5, 0.22, -6.0),
-        cup: new THREE.Vector3(3.5, 0.1, 6.0)
+        cup: new THREE.Vector3(3.5, 0.1, 6.0),
+        initYaw: 0
       },
       {
         name: "7. Buzlu Değirmen Labirenti",
         par: 4,
         spawn: new THREE.Vector3(-3.5, 0.22, -6.5),
-        cup: new THREE.Vector3(3.5, 0.1, 7.5)
+        cup: new THREE.Vector3(3.5, 0.1, 7.5),
+        initYaw: 0
       },
       {
         name: "8. Buzlu Zirve Tırmanışı",
@@ -1239,14 +1315,15 @@
       {
         name: "9. Tramplin Uçurumu & Atlama",
         par: 4,
-        spawn: new THREE.Vector3(0, 0.22, -6.5),
+        spawn: new THREE.Vector3(0, 0.22, -5.8),
         cup: new THREE.Vector3(0, 0.75, 10.2)
       },
       {
         name: "10. Şampiyonlar Zirvesi",
         par: 5,
         spawn: new THREE.Vector3(-4.0, 0.22, -7.0),
-        cup: new THREE.Vector3(4.0, 0.65, 9.5)
+        cup: new THREE.Vector3(4.0, 0.65, 9.5),
+        initYaw: 0
       }
     ];
 
@@ -1257,6 +1334,7 @@
       }
       colliders = [];
       treeColliders = [];
+      woodLogs = [];
       speedBoosters = [];
       sandTraps = [];
       bumpers = [];
@@ -1309,10 +1387,10 @@
       ballPos.y = initGroundY + ballRadius;
       lastSafePos.copy(ballPos);
 
-      // Reset Camera Orbit to look from behind the ball toward the hole cup
+      // Reset Camera Orbit to look from behind the ball toward the fairway / cup
       const toCup = holeCupPos.clone().sub(ballPos);
       toCup.y = 0;
-      camYaw = urlParams.has('yaw') ? parseFloat(urlParams.get('yaw')) : Math.atan2(toCup.x, toCup.z);
+      camYaw = urlParams.has('yaw') ? parseFloat(urlParams.get('yaw')) : (data.initYaw !== undefined ? data.initYaw : Math.atan2(toCup.x, toCup.z));
       camPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0.42;
 
       const lookTarget = ballPos.clone().add(new THREE.Vector3(0, camHeightOffset, 0));
@@ -1667,41 +1745,96 @@
       courseGroup.add(flag);
     }
 
-    function createWoodPostMesh(radius = 0.20, height = 0.65) {
+    // --- Golf Battle Tarzı Uzun Yatay Kütük / Odun Engeli (Horizontal Timber Log) ---
+    function createWoodLogMesh(length = 1.8, radius = 0.18) {
       const group = new THREE.Group();
 
-      // Silindirik ahşap gövde
-      const bodyGeo = new THREE.CylinderGeometry(radius, radius * 1.05, height, 16);
-      const body = new THREE.Mesh(bodyGeo, woodMat);
-      body.position.y = height * 0.5;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
+      // 1. Ana silindirik kütük gövdesi
+      const geo = new THREE.CylinderGeometry(radius, radius, length, 24, 1, false);
+      // Silindiri X eksenine yatır (uzun odun)
+      geo.rotateZ(Math.PI / 2);
 
-      // Üst pahlı ahşap kapak
-      const capGeo = new THREE.CylinderGeometry(radius * 1.10, radius * 1.06, 0.08, 16);
-      const cap = new THREE.Mesh(capGeo, wallTopMat);
-      cap.position.y = height + 0.04;
-      cap.castShadow = true;
-      group.add(cap);
+      // UV haritalama: silindirin uzun yüzeyinde ahşap deseni boylu boyunca aksın
+      const uvs = geo.attributes.uv.array;
+      const rep = Math.max(1, length / 1.5);
+      for (let i = 0; i < uvs.length; i += 2) {
+        uvs[i] *= rep;
+      }
+      geo.attributes.uv.needsUpdate = true;
 
-      // Dekoratif pirinç/altın halka
-      const ringGeo = new THREE.CylinderGeometry(radius * 1.04, radius * 1.04, 0.04, 16);
-      const ringMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.35, metalness: 0.85 });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.position.y = height * 0.65;
-      ring.castShadow = true;
-      group.add(ring);
+      // [sideMat, topCapMat, bottomCapMat]
+      const logMaterials = [logBarkMat, logEndMat, logEndMat];
+      const logMesh = new THREE.Mesh(geo, logMaterials);
+      logMesh.castShadow = true;
+      logMesh.receiveShadow = true;
+      group.add(logMesh);
+
+      // 2. Golf Battle tarzı dövme demir / bronz sabitleme kelepçeleri
+      const ringGeo = new THREE.CylinderGeometry(radius * 1.04, radius * 1.04, 0.045, 24);
+      ringGeo.rotateZ(Math.PI / 2);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x3d3126,
+        roughness: 0.45,
+        metalness: 0.65
+      });
+
+      const offsetDist = length * 0.5 - 0.16;
+      if (offsetDist > 0.15) {
+        const ring1 = new THREE.Mesh(ringGeo, ringMat);
+        ring1.position.set(-offsetDist, 0, 0);
+        ring1.castShadow = true;
+        group.add(ring1);
+
+        const ring2 = new THREE.Mesh(ringGeo, ringMat);
+        ring2.position.set(offsetDist, 0, 0);
+        ring2.castShadow = true;
+        group.add(ring2);
+      }
 
       return group;
     }
 
+    function addWoodLog(x, y, z, length = 1.8, radius = 0.18, angle = 0) {
+      const mesh = createWoodLogMesh(length, radius);
+      mesh.position.set(x, y + radius, z);
+      mesh.rotation.y = angle;
+      courseGroup.add(mesh);
+
+      const halfL = length * 0.5;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+
+      // Uç noktaları hesapla (Three.js Euler Y dönüşü: x' = x*cos(ang), z' = -x*sin(ang))
+      const p1 = {
+        x: x - halfL * cosA,
+        z: z + halfL * sinA
+      };
+      const p2 = {
+        x: x + halfL * cosA,
+        z: z - halfL * sinA
+      };
+
+      woodLogs.push({
+        x: x,
+        y: y + radius,
+        z: z,
+        baseY: y,
+        length: length,
+        radius: radius,
+        angle: angle,
+        p1: p1,
+        p2: p2,
+        mesh: mesh
+      });
+      return mesh;
+    }
+
     function spawnDecorations(idx = 0) {
       treeColliders = [];
+      woodLogs = [];
 
       // 1. Doğal Arka Plan Ağaçları:
-      // Pistin veya duvarların içinde DEĞİL, pistten tamamen uzakta (x = ±8.5m),
-      // sadece manzaraya derinlik ve estetik katan 2 adet çam ağacı
+      // Pistten tamamen uzakta (x = ±8.5m), sadece manzaraya derinlik katan 2 adet çam ağacı
       const scenicTrees = [
         [-8.5, 0.0],
         [8.5, 0.0]
@@ -1729,49 +1862,81 @@
         courseGroup.add(tree);
       });
 
-      // 2. Gereksiz Ağaçlandırmalar Yerine Bölümlere Özel Tahta Engeller (Wooden Obstacles):
-      // Pist içi taktiksel ahşap babalar / engeller. Top çarpınca fiziksel olarak seker.
-      // Her eleman: [x, y, z, radius]
-      const holeWoodObstacles = [
-        // Hole 1: 1. Çam Vadisi
-        [[-0.85, 0.1, -1.2, 0.22], [0.85, 0.1, 0.5, 0.22]],
-        // Hole 2: 2. Buz Pisti
-        [[0.9, 0.1, -2.8, 0.22], [-0.9, 0.1, 1.2, 0.22]],
-        // Hole 3: 3. Değirmen & Kum Tuzağı (L Dönüş)
-        [[-3.5, 0.1, -1.2, 0.22], [3.5, 0.1, 4.5, 0.22]],
-        // Hole 4: 4. Çift Buz Geçidi
-        [[-1.0, 0.1, 0.0, 0.22], [1.0, 0.1, 0.0, 0.22]],
-        // Hole 5: 5. Zirve & Pinball Tamponları
-        [[-1.1, 0.1, -2.0, 0.22], [1.1, 0.1, -2.0, 0.22]],
-        // Hole 6: 6. Zigzag Virajlar
-        [[-3.5, 0.1, -1.2, 0.22], [3.5, 0.1, 4.2, 0.22]],
+      // 2. Golf Battle Tarzı Uzun Odun Engelleri (Horizontal Timber Logs)
+      // Format: [x, y, z, length, radius, angle]
+      const holeWoodLogs = [
+        // Hole 1: 1. Çam Vadisi (S virajı & slalom geçişi)
+        [
+          [-0.75, 0.1, -1.5, 2.0, 0.18, 0],
+          [0.75, 0.1, 1.0, 2.0, 0.18, 0]
+        ],
+        // Hole 2: 2. Buz Pisti (Açılı buz kılavuzları)
+        [
+          [0.85, 0.1, -3.2, 1.8, 0.18, 0.35],
+          [-0.85, 0.1, 1.8, 1.8, 0.18, -0.35]
+        ],
+        // Hole 3: 3. Değirmen & Kum Tuzağı (L Dönüş köşe sekme kütükleri)
+        [
+          [-4.2, 0.1, -1.5, 1.8, 0.18, 0.45],
+          [4.1, 0.1, 5.2, 1.8, 0.18, 0]
+        ],
+        // Hole 4: 4. Çift Buz Geçidi (Merkez ayırıcı uzun kütük & giriş hunisi)
+        [
+          [0.0, 0.1, -0.2, 2.8, 0.18, Math.PI / 2],
+          [-1.1, 0.1, 5.0, 1.4, 0.18, -0.3],
+          [1.1, 0.1, 5.0, 1.4, 0.18, 0.3]
+        ],
+        // Hole 5: 5. Zirve & Pinball Tamponları (Rampa kalkış kılavuzları)
+        [
+          [-1.0, 0.1, -2.8, 1.8, 0.18, -0.25],
+          [1.0, 0.1, -4.2, 1.8, 0.18, 0.25],
+          [-1.5, 0.65, 7.0, 1.6, 0.18, 0.45]
+        ],
+        // Hole 6: 6. Zigzag Virajlar (Dönüş köşesi bank atış kütükleri)
+        [
+          [-4.3, 0.1, -1.2, 1.8, 0.18, 0.55],
+          [2.6, 0.1, 2.0, 1.6, 0.18, -0.40]
+        ],
         // Hole 7: 7. Buzlu Değirmen Labirenti
-        [[-3.5, 0.1, -2.8, 0.22], [3.5, 0.1, 4.0, 0.22]],
+        [
+          [-4.1, 0.1, -2.8, 1.8, 0.18, 0],
+          [2.2, 0.1, 3.6, 1.8, 0.18, 0.50]
+        ],
         // Hole 8: 8. Buzlu Zirve Tırmanışı
-        [[-1.1, 0.1, -2.0, 0.22], [1.1, 0.1, -2.0, 0.22]],
-        // Hole 9: 9. Tramplin Uçurumu
-        [[-1.2, 0.1, -3.2, 0.22], [1.2, 0.1, -3.2, 0.22], [-1.8, 0.75, 4.2, 0.22], [1.8, 0.75, 4.2, 0.22]],
+        [
+          [-1.0, 0.1, -2.0, 1.6, 0.18, -0.2],
+          [1.0, 0.1, -2.0, 1.6, 0.18, 0.2],
+          [1.6, 0.65, 7.4, 1.6, 0.18, -0.4]
+        ],
+        // Hole 9: 9. Tramplin Uçurumu (Kalkış kulvarı & ada deflektörleri)
+        [
+          [-1.2, 0.1, -3.8, 2.0, 0.18, Math.PI / 2],
+          [1.2, 0.1, -3.8, 2.0, 0.18, Math.PI / 2],
+          [-2.0, 0.75, 5.2, 1.8, 0.18, 0.35],
+          [2.0, 0.75, 5.2, 1.8, 0.18, -0.35]
+        ],
         // Hole 10: 10. Şampiyonlar Zirvesi
-        [[-4.0, 0.1, -2.2, 0.22], [0.0, 0.1, 1.8, 0.22], [2.6, 0.65, 8.2, 0.22], [5.4, 0.65, 8.2, 0.22]]
+        [
+          [-4.5, 0.1, -2.5, 2.0, 0.18, 0.2],
+          [0.0, 0.1, 1.2, 2.4, 0.18, 0],
+          [2.4, 0.65, 8.5, 1.8, 0.18, 0.4],
+          [5.6, 0.65, 8.5, 1.8, 0.18, -0.4]
+        ]
       ];
 
-      const obstacles = holeWoodObstacles[idx] || [];
-      obstacles.forEach(([ox, oy, oz, r]) => {
-        const post = createWoodPostMesh(r || 0.22, 0.65);
-        post.position.set(ox, oy, oz);
-        courseGroup.add(post);
-        // Aktif fiziksel çarpışma alanı: top çarptığında seker
-        treeColliders.push({ x: ox, z: oz, radius: (r || 0.22) * 1.05 });
+      const logs = holeWoodLogs[idx] || [];
+      logs.forEach(([ox, oy, oz, len, r, ang]) => {
+        addWoodLog(ox, oy, oz, len || 1.8, r || 0.18, ang || 0);
       });
     }
 
     // --- Hole 1 (1. Çam Vadisi - Kolay Başlangıç) ---
     function buildHole1() {
       addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
-      addWall(-1.92, 0.35, 0, 0.26, 0.7, 16.5);
-      addWall(1.92, 0.35, 0, 0.26, 0.7, 16.5);
-      addWall(0, 0.35, -8.12, 3.58, 0.7, 0.26);
-      addWall(0, 0.35, 8.12, 3.58, 0.7, 0.26);
+      addWall(-1.92, 0.58, 0, 0.26, 1.15, 16.5);
+      addWall(1.92, 0.58, 0, 0.26, 1.15, 16.5);
+      addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
+      addWall(0, 0.58, 8.12, 3.58, 1.15, 0.26);
       addSand(1.0, 0.1, 2.5, 1.3, 3.0);
       addBumper(-1.0, 0.1, 2.5, 0.4);
     }
@@ -1779,11 +1944,10 @@
     // --- Hole 2 (2. Buz Pisti & İlk Viraj - Buz Mekaniği Tanıtımı) ---
     function buildHole2() {
       addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
-      addWall(-1.92, 0.35, 0, 0.26, 0.7, 16.5);
-      addWall(1.92, 0.35, 0, 0.26, 0.7, 16.5);
-      addWall(0, 0.35, -8.12, 3.58, 0.7, 0.26);
-      addWall(0, 0.35, 8.12, 3.58, 0.7, 0.26);
-      // Ortada kaygan buz alanı: top üzerinden geçerken hızlanır ve kayar!
+      addWall(-1.92, 0.58, 0, 0.26, 1.15, 16.5);
+      addWall(1.92, 0.58, 0, 0.26, 1.15, 16.5);
+      addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
+      addWall(0, 0.58, 8.12, 3.58, 1.15, 0.26);
       addIce(0, 0.1, -1.0, 1.8, 3.6);
       addSand(-1.0, 0.1, -4.0, 1.2, 1.8);
       addBumper(-1.1, 0.1, 2.8, 0.38);
@@ -1793,27 +1957,27 @@
     // --- Hole 3 (3. Değirmen & Kum Tuzağı - Klasik L Dönüş) ---
     function buildHole3() {
       addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
-      addWall(-5.22, 0.35, -1.45, 0.26, 0.7, 11.6);
-      addWall(-3.5, 0.35, -7.12, 3.18, 0.7, 0.26);
-      addWall(-1.78, 0.35, -3.12, 0.26, 0.7, 7.74);
+      addWall(-5.22, 0.58, -1.45, 0.26, 1.15, 11.6);
+      addWall(-3.5, 0.18, -7.12, 3.18, 0.36, 0.26);
+      addWall(-1.78, 0.58, -3.12, 0.26, 1.15, 7.74);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
-      addWall(-1.6, 0.35, 4.22, 7.45, 0.7, 0.28);
-      addWall(-0.13, 0.35, 0.88, 3.56, 0.7, 0.26);
+      addWall(-1.6, 0.58, 4.22, 7.45, 1.15, 0.28);
+      addWall(-0.13, 0.58, 0.88, 3.56, 1.15, 0.26);
       addRotor(0.5, 0.1, 2.5);
       addSand(-1.0, 0.1, 2.5, 1.5, 1.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
-      addWall(5.22, 0.35, 5.25, 0.26, 0.7, 9.0);
-      addWall(1.78, 0.35, 6.85, 0.26, 0.7, 5.4);
-      addWall(3.5, 0.35, 9.62, 3.18, 0.7, 0.26);
+      addWall(5.22, 0.58, 5.25, 0.26, 1.15, 9.0);
+      addWall(1.78, 0.58, 6.85, 0.26, 1.15, 5.4);
+      addWall(3.5, 0.58, 9.62, 3.18, 1.15, 0.26);
     }
 
     // --- Hole 4 (4. Çift Buz Geçidi - Yüksek Hızlı Düzlük) ---
     function buildHole4() {
       addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 17, 0, 7.0, 0.21);
-      addWall(-2.02, 0.35, 0, 0.26, 0.7, 17.5);
-      addWall(2.02, 0.35, 0, 0.26, 0.7, 17.5);
-      addWall(0, 0.35, -8.62, 3.78, 0.7, 0.26);
-      addWall(0, 0.35, 8.62, 3.78, 0.7, 0.26);
+      addWall(-2.02, 0.58, 0, 0.26, 1.15, 17.5);
+      addWall(2.02, 0.58, 0, 0.26, 1.15, 17.5);
+      addWall(0, 0.18, -8.62, 3.78, 0.36, 0.26);
+      addWall(0, 0.58, 8.62, 3.78, 1.15, 0.26);
       addIce(0, 0.1, -3.0, 1.9, 3.0);
       addIce(0, 0.1, 2.5, 1.9, 3.0);
       addBumper(-1.1, 0.1, -0.2, 0.40);
@@ -1824,22 +1988,22 @@
     // --- Hole 5 (5. Zirve & Pinball Tamponları - Rampa Tırmanışı) ---
     function buildHole5() {
       addFloor(0, 0, -4, 3.8, 0.2, 7.0);
-      addWall(-2.02, 0.35, -3.95, 0.26, 0.7, 7.5);
-      addWall(2.02, 0.35, -3.95, 0.26, 0.7, 7.5);
-      addWall(0, 0.35, -7.62, 3.78, 0.7, 0.26);
+      addWall(-2.02, 0.58, -3.95, 0.26, 1.15, 7.5);
+      addWall(2.02, 0.58, -3.95, 0.26, 1.15, 7.5);
+      addWall(0, 0.18, -7.62, 3.78, 0.36, 0.26);
       const ramp = addFloor(0, 0.275, 2.0, 3.8, 0.2, 5.1);
       ramp.rotation.x = -0.11;
       ramp.updateMatrixWorld(true);
-      const rw1 = addWall(-2.02, 0.62, 2.0, 0.26, 0.8, 5.2);
+      const rw1 = addWall(-2.02, 0.80, 2.0, 0.26, 1.20, 5.2);
       rw1.rotation.x = -0.11;
-      const rw2 = addWall(2.02, 0.62, 2.0, 0.26, 0.8, 5.2);
+      const rw2 = addWall(2.02, 0.80, 2.0, 0.26, 1.20, 5.2);
       rw2.rotation.x = -0.11;
       addFloorWithCupHole(0, 0.55, 7.45, 4.6, 0.2, 6.2, 0, 8.5, 0.21);
-      addWall(-2.42, 0.95, 7.45, 0.26, 0.9, 6.6);
-      addWall(2.42, 0.95, 7.45, 0.26, 0.9, 6.6);
-      addWall(0, 1.05, 10.65, 4.58, 1.1, 0.28);
-      addWall(-2.2, 0.95, 4.35, 0.52, 0.9, 0.26);
-      addWall(2.2, 0.95, 4.35, 0.52, 0.9, 0.26);
+      addWall(-2.42, 1.18, 7.45, 0.26, 1.25, 6.6);
+      addWall(2.42, 1.18, 7.45, 0.26, 1.25, 6.6);
+      addWall(0, 1.25, 10.65, 4.58, 1.30, 0.28);
+      addWall(-2.2, 1.18, 4.35, 0.52, 1.25, 0.26);
+      addWall(2.2, 1.18, 4.35, 0.52, 1.25, 0.26);
       addBumper(-1.4, 0.65, 6.5, 0.4);
       addBumper(1.4, 0.65, 6.5, 0.4);
     }
@@ -1848,19 +2012,19 @@
     function buildHole6() {
       // Sol başlangıç koridoru
       addFloor(-3.5, 0, -3.0, 3.4, 0.2, 7.6);
-      addWall(-5.22, 0.35, -3.0, 0.26, 0.7, 7.8);
-      addWall(-3.5, 0.35, -6.82, 3.18, 0.7, 0.26);
-      addWall(-1.78, 0.35, -3.6, 0.26, 0.7, 6.2);
+      addWall(-5.22, 0.58, -3.0, 0.26, 1.15, 7.8);
+      addWall(-3.5, 0.18, -6.82, 3.18, 0.36, 0.26);
+      addWall(-1.78, 0.58, -3.6, 0.26, 1.15, 6.2);
       // Orta geçiş koridoru (buzlu bağlantı)
       addFloor(0, 0, 0.0, 4.4, 0.2, 2.6);
       addIce(0, 0.1, 0.0, 2.2, 1.8);
-      addWall(0, 0.35, -1.32, 3.6, 0.7, 0.26);
-      addWall(0, 0.35, 1.32, 3.6, 0.7, 0.26);
+      addWall(0, 0.58, -1.32, 3.6, 1.15, 0.26);
+      addWall(0, 0.58, 1.32, 3.6, 1.15, 0.26);
       // Sağ hedef koridoru
       addFloorWithCupHole(3.5, 0, 3.0, 3.4, 0.2, 7.6, 3.5, 6.0, 0.21);
-      addWall(5.22, 0.35, 3.0, 0.26, 0.7, 7.8);
-      addWall(1.78, 0.35, 3.6, 0.26, 0.7, 6.2);
-      addWall(3.5, 0.35, 6.82, 3.18, 0.7, 0.26);
+      addWall(5.22, 0.58, 3.0, 0.26, 1.15, 7.8);
+      addWall(1.78, 0.58, 3.6, 0.26, 1.15, 6.2);
+      addWall(3.5, 0.58, 6.82, 3.18, 1.15, 0.26);
       addSand(3.5, 0.1, 1.2, 1.4, 1.4);
       addBumper(-3.5, 0.1, -0.6, 0.4);
     }
@@ -1868,21 +2032,19 @@
     // --- Hole 7 (7. Buzlu Değirmen Labirenti - Zamanlama ve Hız) ---
     function buildHole7() {
       addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
-      addWall(-5.22, 0.35, -1.45, 0.26, 0.7, 11.6);
-      addWall(-3.5, 0.35, -7.12, 3.18, 0.7, 0.26);
-      addWall(-1.78, 0.35, -3.12, 0.26, 0.7, 7.74);
-      // Viraja giriş buz şeridi
+      addWall(-5.22, 0.58, -1.45, 0.26, 1.15, 11.6);
+      addWall(-3.5, 0.18, -7.12, 3.18, 0.36, 0.26);
+      addWall(-1.78, 0.58, -3.12, 0.26, 1.15, 7.74);
       addIce(-3.5, 0.1, -1.0, 1.8, 2.8);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
-      addWall(-1.6, 0.35, 4.22, 7.45, 0.7, 0.28);
-      addWall(-0.13, 0.35, 0.88, 3.56, 0.7, 0.26);
-      // Değirmenin altı kaygan buz!
+      addWall(-1.6, 0.58, 4.22, 7.45, 1.15, 0.28);
+      addWall(-0.13, 0.58, 0.88, 3.56, 1.15, 0.26);
       addIce(0.0, 0.1, 2.5, 2.6, 2.2);
       addRotor(0.0, 0.1, 2.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
-      addWall(5.22, 0.35, 5.25, 0.26, 0.7, 9.0);
-      addWall(1.78, 0.35, 6.85, 0.26, 0.7, 5.4);
-      addWall(3.5, 0.35, 9.62, 3.18, 0.7, 0.26);
+      addWall(5.22, 0.58, 5.25, 0.26, 1.15, 9.0);
+      addWall(1.78, 0.58, 6.85, 0.26, 1.15, 5.4);
+      addWall(3.5, 0.58, 9.62, 3.18, 1.15, 0.26);
       addBumper(2.3, 0.1, 5.5, 0.38);
       addBumper(4.7, 0.1, 5.5, 0.38);
     }
@@ -1890,25 +2052,23 @@
     // --- Hole 8 (8. Buzlu Zirve Tırmanışı - Rampa & Zirve Değirmeni) ---
     function buildHole8() {
       addFloor(0, 0, -4.0, 3.8, 0.2, 6.5);
-      addWall(-2.02, 0.35, -3.95, 0.26, 0.7, 7.0);
-      addWall(2.02, 0.35, -3.95, 0.26, 0.7, 7.0);
-      addWall(0, 0.35, -7.32, 3.78, 0.7, 0.26);
+      addWall(-2.02, 0.58, -3.95, 0.26, 1.15, 7.0);
+      addWall(2.02, 0.58, -3.95, 0.26, 1.15, 7.0);
+      addWall(0, 0.18, -7.32, 3.78, 0.36, 0.26);
       addIce(0, 0.1, -4.0, 1.8, 2.6);
-      // Zirveye tırmanan rampa
       const ramp = addFloor(0, 0.275, 1.8, 3.8, 0.2, 5.1);
       ramp.rotation.x = -0.11;
       ramp.updateMatrixWorld(true);
-      const rw1 = addWall(-2.02, 0.62, 1.8, 0.26, 0.8, 5.2);
+      const rw1 = addWall(-2.02, 0.80, 1.8, 0.26, 1.20, 5.2);
       rw1.rotation.x = -0.11;
-      const rw2 = addWall(2.02, 0.62, 1.8, 0.26, 0.8, 5.2);
+      const rw2 = addWall(2.02, 0.80, 1.8, 0.26, 1.20, 5.2);
       rw2.rotation.x = -0.11;
-      // Zirve platformu (y: 0.55 / zemin kotu: 0.65)
       addFloorWithCupHole(0, 0.55, 7.5, 4.6, 0.2, 6.4, 0, 8.5, 0.21);
-      addWall(-2.42, 0.95, 7.5, 0.26, 0.9, 6.8);
-      addWall(2.42, 0.95, 7.5, 0.26, 0.9, 6.8);
-      addWall(0, 1.05, 10.8, 4.58, 1.1, 0.28);
-      addWall(-2.2, 0.95, 4.25, 0.52, 0.9, 0.26);
-      addWall(2.2, 0.95, 4.25, 0.52, 0.9, 0.26);
+      addWall(-2.42, 1.18, 7.5, 0.26, 1.25, 6.8);
+      addWall(2.42, 1.18, 7.5, 0.26, 1.25, 6.8);
+      addWall(0, 1.25, 10.8, 4.58, 1.30, 0.28);
+      addWall(-2.2, 1.18, 4.25, 0.52, 1.25, 0.26);
+      addWall(2.2, 1.18, 4.25, 0.52, 1.25, 0.26);
       addIce(0, 0.65, 5.8, 2.0, 2.0);
       addRotor(0, 0.65, 5.8);
       addBumper(-1.3, 0.65, 7.8, 0.38);
@@ -1919,31 +2079,33 @@
     function buildHole9() {
       // 1. Kalkış pisti
       addFloor(0, 0, -5.0, 4.0, 0.2, 5.0);
-      addWall(-2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
-      addWall(2.12, 0.35, -5.0, 0.26, 0.7, 5.2);
-      addWall(0, 0.35, -7.62, 3.98, 0.7, 0.26);
+      addWall(-2.12, 0.65, -5.0, 0.26, 1.30, 5.2);
+      addWall(2.12, 0.65, -5.0, 0.26, 1.30, 5.2);
+      addWall(0, 0.18, -7.62, 3.98, 0.36, 0.26);
 
-      // 2. Dik kalkış tramplini: Giriş kotu zeminle 100% sıfır birleşir, lip kotu 1.04m'ye yükselir
+      // 2. Dik kalkış tramplini & rampanın yüksek yan koruma duvarları
       addJumpRamp(0, 0.47, -0.8, 3.8, 0.2, 3.4, -0.28);
+      // Rampa yan duvarları: topun rampanın yanından kayıp düşmesini kesin engeller
+      addWall(-2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
+      addWall(2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
 
-      // 3. z: 0.9 ile 2.5 arası BOŞLUK (Açık kanyon - top momentumuyla havada uçar!)
-      // Karşıdaki genişletilmiş yüksek ada çim alanı (y: 0.65, zemin kotu: 0.75m)
-      // Landing Fairway: z = 2.5'ten 7.9'a kadar geniş, sağlam çim zemin
+      // 3. Vadi zemin bağlantısı (Açık kanyon yerine dikişsiz emniyet vadisi - ASLA boşluk yok!)
+      addFloor(0, 0.1, 1.7, 5.2, 0.2, 2.2);
+
+      // Rampadan adaya geçiş yüksek yan duvarları (Tamamen kapalı koridor)
+      addWall(-2.67, 1.10, 1.7, 1.4, 1.40, 1.8);
+      addWall(2.67, 1.10, 1.7, 1.4, 1.40, 1.8);
+
+      // 4. Ada Fairway ve Green
       addFloor(0, 0.65, 5.2, 6.4, 0.2, 5.4);
-
-      // Green ve kupa alanı: z = 7.6'dan 13.0'a kadar geniş yeşil alan, kupa z = 10.2'de
       addFloorWithCupHole(0, 0.65, 10.3, 6.4, 0.2, 5.4, 0, 10.2, 0.21);
 
-      // Ada duvarları: Sağlam yüksek korkuluklar (h: 0.90m, kot: 0.95 -> sekme sonrası parkur dışı kaymayı kesin önler)
-      addWall(-3.32, 0.95, 7.8, 0.26, 0.90, 11.0);
-      addWall(3.32, 0.95, 7.8, 0.26, 0.90, 11.0);
-      addWall(0, 0.95, 13.22, 6.38, 0.90, 0.26);
+      // Ada yüksek çevre duvarları (H = 1.35m)
+      addWall(-3.32, 1.25, 7.8, 0.26, 1.35, 11.0);
+      addWall(3.32, 1.25, 7.8, 0.26, 1.35, 11.0);
+      addWall(0, 1.25, 13.22, 6.38, 1.35, 0.26);
 
-      // Kanyon tarafı güvenlik bordürü (Yan kanatlar: topun iniş sonrası geriye kanyona kaymasını önler)
-      addWall(-2.45, 0.88, 2.50, 1.5, 0.65, 0.26);
-      addWall(2.45, 0.88, 2.50, 1.5, 0.65, 0.26);
-
-      // Ada üzerindeki yönlendirici pinball tamponları (Kenarlarda stratejik konumlandırılmış)
+      // Ada üzerindeki yönlendirici pinball tamponları
       addBumper(-1.8, 0.65, 8.8, 0.40);
       addBumper(1.8, 0.65, 8.8, 0.40);
     }
@@ -1952,31 +2114,31 @@
     function buildHole10() {
       // 1. Kademe: Buzlu kalkış koridoru
       addFloor(-4.0, 0, -3.8, 3.6, 0.2, 7.5);
-      addWall(-5.92, 0.35, -3.8, 0.26, 0.7, 7.7);
-      addWall(-4.0, 0.35, -7.62, 3.58, 0.7, 0.26);
-      addWall(-2.08, 0.35, -4.5, 0.26, 0.7, 6.0);
+      addWall(-5.92, 0.58, -3.8, 0.26, 1.15, 7.7);
+      addWall(-4.0, 0.18, -7.62, 3.58, 0.36, 0.26);
+      addWall(-2.08, 0.58, -4.5, 0.26, 1.15, 6.0);
       addIce(-4.0, 0.1, -5.0, 1.8, 2.6);
       // 2. Kademe: Değirmenli orta geçiş
       addFloor(0, 0, 1.2, 11.6, 0.2, 3.4);
-      addWall(-2.0, 0.35, 2.92, 8.2, 0.7, 0.28);
-      addWall(0.0, 0.35, -0.52, 4.0, 0.7, 0.26);
+      addWall(-2.0, 0.58, 2.92, 8.2, 1.15, 0.28);
+      addWall(0.0, 0.58, -0.52, 4.0, 1.15, 0.26);
       addRotor(-1.5, 0.1, 1.2);
       addIce(1.5, 0.1, 1.2, 2.0, 2.0);
       // 3. Kademe: Yüksek zirveye tırmanış rampası
       const ramp = addFloor(4.0, 0.275, 4.8, 3.6, 0.2, 4.2);
       ramp.rotation.x = -0.13;
       ramp.updateMatrixWorld(true);
-      const rw1 = addWall(2.08, 0.62, 4.8, 0.26, 0.8, 4.3);
+      const rw1 = addWall(2.08, 0.80, 4.8, 0.26, 1.20, 4.3);
       rw1.rotation.x = -0.13;
-      const rw2 = addWall(5.92, 0.62, 4.8, 0.26, 0.8, 4.3);
+      const rw2 = addWall(5.92, 0.80, 4.8, 0.26, 1.20, 4.3);
       rw2.rotation.x = -0.13;
       // 4. Kademe: Şampiyonlar Zirvesi Kupa Arenası (y: 0.65)
       addFloorWithCupHole(4.0, 0.55, 9.5, 5.2, 0.2, 5.5, 4.0, 9.5, 0.21);
-      addWall(1.28, 0.95, 9.5, 0.26, 0.9, 5.7);
-      addWall(6.72, 0.95, 9.5, 0.26, 0.9, 5.7);
-      addWall(4.0, 1.05, 12.35, 5.18, 1.1, 0.28);
-      addWall(1.5, 0.95, 6.75, 0.52, 0.9, 0.26);
-      addWall(6.5, 0.95, 6.75, 0.52, 0.9, 0.26);
+      addWall(1.28, 1.18, 9.5, 0.26, 1.25, 5.7);
+      addWall(6.72, 1.18, 9.5, 0.26, 1.25, 5.7);
+      addWall(4.0, 1.25, 12.35, 5.18, 1.30, 0.28);
+      addWall(1.5, 1.18, 6.75, 0.52, 1.25, 0.26);
+      addWall(6.5, 1.18, 6.75, 0.52, 1.25, 0.26);
       addBumper(2.4, 0.65, 8.2, 0.40);
       addBumper(5.6, 0.65, 8.2, 0.40);
       addBumper(4.0, 0.65, 11.2, 0.38);
@@ -2262,6 +2424,55 @@
           if (dot < 0) {
             ballVel.x = (ballVel.x - 1.8 * dot * nx) * 0.75;
             ballVel.z = (ballVel.z - 1.8 * dot * nz) * 0.75;
+            playBounce();
+          }
+        }
+      });
+    }
+
+    // --- Golf Battle Uzun Odun / Kütük Çarpışma Çözümleyici (Capsule Collider) ---
+    function resolveWoodLogCollisions() {
+      woodLogs.forEach(log => {
+        // Dikey yükseklik kontrolü: Top kütüğün üzerinden güvenle uçuyorsa çarpışma sayılmaz
+        if (isAirborne && (ballPos.y - ballRadius > log.baseY + log.radius * 2.0 + 0.04)) {
+          return;
+        }
+        if (ballPos.y + ballRadius < log.baseY - 0.1) {
+          return;
+        }
+
+        const dx = log.p2.x - log.p1.x;
+        const dz = log.p2.z - log.p1.z;
+        const lenSq = dx * dx + dz * dz;
+        if (lenSq < 0.0001) return;
+
+        const bx = ballPos.x - log.p1.x;
+        const bz = ballPos.z - log.p1.z;
+        const t = Math.max(0, Math.min(1, (bx * dx + bz * dz) / lenSq));
+        const qx = log.p1.x + t * dx;
+        const qz = log.p1.z + t * dz;
+
+        const distX = ballPos.x - qx;
+        const distZ = ballPos.z - qz;
+        const dist = Math.hypot(distX, distZ);
+        const minDist = log.radius + ballRadius;
+
+        if (dist < minDist && dist > 0.0001) {
+          const nx = distX / dist;
+          const nz = distZ / dist;
+          ballPos.x = qx + nx * (minDist + 0.008);
+          ballPos.z = qz + nz * (minDist + 0.008);
+
+          const dot = ballVel.x * nx + ballVel.z * nz;
+          if (dot < 0) {
+            // Ahşap kütük elastik sekme katsayısı
+            ballVel.x = (ballVel.x - 1.85 * dot * nx) * 0.82;
+            ballVel.z = (ballVel.z - 1.85 * dot * nz) * 0.82;
+            // Hızlı çarpmada gerçekçi hafif sekme hoplaması
+            if (ballVel.length() > 3.0 && !isAirborne) {
+              ballVel.y = Math.min(ballVel.length() * 0.14, 1.8);
+              isAirborne = true;
+            }
             playBounce();
           }
         }
@@ -2648,6 +2859,9 @@
         // Ağaç Gövdeleri Çarpışmaları (Aktif ağaç çarpışması)
         resolveTreeCollisions();
 
+        // Golf Battle Uzun Odun Engelleri Çarpışmaları (Capsule Collision)
+        resolveWoodLogCollisions();
+
         // Pinball Tamponları
         bumpers.forEach(b => {
           const dist2D = Math.hypot(ballPos.x - b.pos.x, ballPos.z - b.pos.z);
@@ -2660,30 +2874,33 @@
           }
         });
 
-        // Duvar Çarpışmaları (Top havadaysa ve duvar üst kotundan yüksekteyse üstünden uçar!)
+        // Duvar Çarpışmaları: Parkur dışına asla çıkılamaz, yüksek duvarlar topu daima içeride tutar!
         colliders.forEach(c => {
-          if (isAirborne && (ballPos.y - ballRadius > c.box.max.y - 0.04)) {
-            return;
-          }
-          if (c.box.containsPoint(ballPos)) {
-            const center = new THREE.Vector3();
-            c.box.getCenter(center);
-            const size = new THREE.Vector3();
-            c.box.getSize(size);
+          const center = new THREE.Vector3();
+          c.box.getCenter(center);
+          const size = new THREE.Vector3();
+          c.box.getSize(size);
 
-            const dx = ballPos.x - center.x;
-            const dz = ballPos.z - center.z;
-            const ox = size.x * 0.5 + ballRadius - Math.abs(dx);
-            const oz = size.z * 0.5 + ballRadius - Math.abs(dz);
+          const dx = ballPos.x - center.x;
+          const dz = ballPos.z - center.z;
+          const ox = size.x * 0.5 + ballRadius - Math.abs(dx);
+          const oz = size.z * 0.5 + ballRadius - Math.abs(dz);
 
-            if (ox < oz) {
-              ballVel.x = -ballVel.x * 0.85;
-              ballPos.x = center.x + Math.sign(dx) * (size.x * 0.5 + ballRadius + 0.015);
-            } else {
-              ballVel.z = -ballVel.z * 0.85;
-              ballPos.z = center.z + Math.sign(dz) * (size.z * 0.5 + ballRadius + 0.015);
+          if (ox > 0 && oz > 0) {
+            // Y kontrolü: Top duvar kotu ve üzerindeyken duvardan içeri seker, asla parkur dışına uçamaz
+            if (ballPos.y - ballRadius < c.box.max.y + 1.2) {
+              if (ox < oz) {
+                ballVel.x = -ballVel.x * 0.85;
+                ballPos.x = center.x + Math.sign(dx) * (size.x * 0.5 + ballRadius + 0.015);
+              } else {
+                ballVel.z = -ballVel.z * 0.85;
+                ballPos.z = center.z + Math.sign(dz) * (size.z * 0.5 + ballRadius + 0.015);
+              }
+              if (isAirborne && ballVel.y > 0) {
+                ballVel.y *= 0.5;
+              }
+              playBounce();
             }
-            playBounce();
           }
         });
 
