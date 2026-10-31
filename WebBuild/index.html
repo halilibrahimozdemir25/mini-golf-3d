@@ -449,30 +449,25 @@
       canvas.height = 1024;
       const ctx = canvas.getContext("2d");
 
-      // 1. Doygun, zengin ve canli sampiyona zumrut yesili zemin (#0e852c) - Asla beyaz/soluk degil!
-      ctx.fillStyle = "#148a30";
-      ctx.fillRect(0, 0, 1024, 1024);
+      // Golf Battle Birebir Orijinal Renk Paleti (Canlı açık fıstık yeşili & zengin koyu zümrüt):
+      const cLight = "#36a218"; // Golf Battle canlı açık çim karesi
+      const cDark  = "#1f750c"; // Golf Battle koyu zümrüt çim karesi
 
-      // 2. Asla yapboz/dama karesi yok! Luks ve kesintisiz kadife cim ton derinligi
-      const grad = ctx.createLinearGradient(0, 0, 0, 1024);
-      grad.addColorStop(0.0, "rgba(25, 155, 55, 0.12)");
-      grad.addColorStop(0.5, "rgba(12, 118, 38, 0.12)");
-      grad.addColorStop(1.0, "rgba(25, 155, 55, 0.12)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 1024, 1024);
+      // 4 Büyük Çeyrek Kare (512x512 her biri - Golf Battle ölçeğinde)
+      // Asla yapboz bordür/siyah çizgi yok, pürüzsüz ve temiz geçiş!
+      ctx.fillStyle = cDark;
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.fillRect(512, 512, 512, 512);
 
-      // 3. Cok zarif, dogal boyuna cim bicim yonu (Lawn mowing flow - ince ve uyumlu)
-      for (let x = 0; x < 1024; x += 128) {
-        const isStripe = (x / 128) % 2 === 0;
-        ctx.fillStyle = isStripe ? "rgba(25, 160, 55, 0.12)" : "rgba(8, 102, 30, 0.12)";
-        ctx.fillRect(x, 0, 128, 1024);
-      }
+      ctx.fillStyle = cLight;
+      ctx.fillRect(512, 0, 512, 512);
+      ctx.fillRect(0, 512, 512, 512);
 
-      // 4. Ince, puruzsuz kadife cim lifleri ve dogal yesil canliligi
+      // İnce doğal kadife çim mikro-dokusu (Golf Battle tarzı taze golf yeşili)
       const imgData = ctx.getImageData(0, 0, 1024, 1024);
       const data = imgData.data;
       for (let i = 0; i < data.length; i += 4) {
-        const noise = (Math.random() - 0.5) * 8;
+        const noise = (Math.random() - 0.5) * 5;
         data[i] = Math.min(255, Math.max(0, data[i] + noise * 0.2));
         data[i+1] = Math.min(255, Math.max(0, data[i+1] + noise * 0.5));
         data[i+2] = Math.min(255, Math.max(0, data[i+2] + noise * 0.2));
@@ -497,57 +492,55 @@
       canvas.height = 512;
       const ctx = canvas.getContext("2d");
 
-      // 1. Sıcak, zengin ve net sedir / meşe zemin tonu (#9c5826)
-      ctx.fillStyle = "#9c5826";
+      // 1. Golf Battle Birebir Sıcak Kestane / Çikolata Temel Ahşap Tonu (#5c2d16)
+      ctx.fillStyle = "#5c2d16";
       ctx.fillRect(0, 0, 1024, 512);
 
-      // 2. Net, belirgin ve akıcı ahşap damarları (Sharp, high-contrast wood grain fibers)
+      // 2. Belirgin ve stilize ahşap damarları
       for (let y = 0; y < 512; y++) {
-        const wave1 = Math.sin(y * 0.07) * 22;
-        const wave2 = Math.cos(y * 0.03 + 1.0) * 30;
+        const wave1 = Math.sin(y * 0.07) * 20;
+        const wave2 = Math.cos(y * 0.03 + 1.0) * 25;
         const wave = wave1 + wave2;
 
-        const isDarkBand = (Math.floor((y + wave * 0.35) / 12) % 2 === 0);
-        const alpha = 0.16 + Math.sin(y * 0.12) * 0.08;
+        const isDarkBand = (Math.floor((y + wave * 0.35) / 14) % 2 === 0);
+        const alpha = 0.14 + Math.sin(y * 0.12) * 0.06;
 
-        ctx.fillStyle = isDarkBand ? `rgba(50, 20, 6, ${alpha})` : `rgba(215, 138, 68, ${alpha * 0.95})`;
+        ctx.fillStyle = isDarkBand ? "rgba(35, 14, 5, " + alpha + ")" : "rgba(130, 68, 34, " + (alpha * 0.95) + ")";
         ctx.fillRect(0, y, 1024, 1);
       }
 
-      // 3. Kalas Seviyeleri (Derin, jilet gibi net yatay kalas gölgeleri ve pah yansımaları)
+      // 3. Kalas Seviyeleri (Derin, net yatay kalas gölgeleri ve pah yansımaları)
       const plankY = [0, 128, 256, 384, 512];
       plankY.forEach(py => {
-        // Derin kontrast gölge çizgisi
-        ctx.fillStyle = "rgba(20, 8, 3, 0.85)";
+        ctx.fillStyle = "rgba(18, 7, 2, 0.88)";
         ctx.fillRect(0, py - 4, 1024, 6);
-        // Keskin açık pah ışıltısı
-        ctx.fillStyle = "rgba(245, 175, 105, 0.55)";
+        ctx.fillStyle = "rgba(160, 85, 45, 0.45)";
         ctx.fillRect(0, py + 2, 1024, 4);
       });
 
-      // 4. Kalas Bağlantı Vidaları / Çivileri (Crisp Structural Screws)
+      // 4. Kalas Bağlantı Vidaları / Çivileri
       for (let px = 64; px < 1024; px += 256) {
         [64, 192, 320, 448].forEach(py => {
-          ctx.fillStyle = "rgba(25, 10, 4, 0.70)";
+          ctx.fillStyle = "rgba(20, 8, 3, 0.75)";
           ctx.beginPath();
           ctx.arc(px, py, 3.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = "rgba(240, 190, 130, 0.50)";
+          ctx.fillStyle = "rgba(175, 100, 55, 0.45)";
           ctx.beginPath();
           ctx.arc(px - 1, py - 1, 1.5, 0, Math.PI * 2);
           ctx.fill();
         });
       }
 
-      // 5. Doğal Ahşap Budakları (Organic Sharp Wood Knots)
+      // 5. Doğal Ahşap Budakları
       function drawWoodKnot(kx, ky, r) {
-        ctx.fillStyle = "#321406";
+        ctx.fillStyle = "#2a1205";
         ctx.beginPath();
         ctx.ellipse(kx, ky, r * 0.45, r * 0.35, 0.2, 0, Math.PI * 2);
         ctx.fill();
 
         for (let rad = r * 0.6; rad <= r * 2.2; rad += 4) {
-          ctx.strokeStyle = (Math.floor(rad) % 8 === 0) ? "rgba(45, 16, 5, 0.42)" : "rgba(215, 140, 70, 0.28)";
+          ctx.strokeStyle = (Math.floor(rad) % 8 === 0) ? "rgba(35, 14, 5, 0.40)" : "rgba(145, 75, 38, 0.25)";
           ctx.lineWidth = 2.0;
           ctx.beginPath();
           ctx.ellipse(kx, ky, rad, rad * 0.65, 0.2, 0, Math.PI * 2);
@@ -561,6 +554,7 @@
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(1, 1);
       tex.generateMipmaps = true;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       tex.magFilter = THREE.LinearFilter;
@@ -575,49 +569,47 @@
       canvas.height = 256;
       const ctx = canvas.getContext("2d");
 
-      // 1. Sicak, zengin ve net mese/sedir temel ahsap tonu (#a25e28)
-      ctx.fillStyle = "#a25e28";
+      // 1. Golf Battle Birebir Üst Küpeşte Kestane Tonu (#66331a)
+      ctx.fillStyle = "#66331a";
       ctx.fillRect(0, 0, 1024, 256);
 
-      // 2. Boyuna puruzsuz, net ahsap damarlari
+      // 2. Boyuna pürüzsüz saten ahşap damarları
       for (let y = 14; y < 242; y++) {
         const wave = Math.sin(y * 0.09) * 10 + Math.cos(y * 0.03) * 14;
         const isDark = (Math.floor((y + wave * 0.35) / 14) % 2 === 0);
-        const alpha = 0.12 + Math.sin(y * 0.15) * 0.06;
-        ctx.fillStyle = isDark ? `rgba(50, 18, 5, ${alpha})` : `rgba(240, 175, 105, ${alpha})`;
+        const alpha = 0.10 + Math.sin(y * 0.15) * 0.05;
+        ctx.fillStyle = isDark ? "rgba(35, 14, 5, " + alpha + ")" : "rgba(150, 80, 42, " + alpha + ")";
         ctx.fillRect(0, y, 1024, 1);
       }
 
-      // 3. Ince ve net ahsap lifleri
-      ctx.fillStyle = "rgba(40, 15, 5, 0.15)";
-      for (let i = 0; i < 450; i++) {
+      // 3. İnce doğal ahşap lifleri
+      ctx.fillStyle = "rgba(30, 12, 4, 0.12)";
+      for (let i = 0; i < 400; i++) {
         const px = Math.random() * 1024;
         const py = 18 + Math.random() * 220;
         const plen = 25 + Math.random() * 90;
         ctx.fillRect(px, py, plen, 1.2);
       }
 
-      // 4. Jilet gibi net kenar pahlari (Ultra-Crisp 3D Beveled Chamfers)
-      // Ic kenar pahi (Top chamfer)
-      ctx.fillStyle = "rgba(20, 7, 2, 0.85)";
+      // 4. Kenar Pahları (Beveled Chamfers)
+      ctx.fillStyle = "rgba(15, 6, 2, 0.85)";
       ctx.fillRect(0, 0, 1024, 4);
-      ctx.fillStyle = "rgba(255, 205, 140, 0.75)";
+      ctx.fillStyle = "rgba(175, 95, 52, 0.70)";
       ctx.fillRect(0, 4, 1024, 4);
       const gradTop = ctx.createLinearGradient(0, 8, 0, 20);
-      gradTop.addColorStop(0.0, "rgba(255, 205, 140, 0.35)");
-      gradTop.addColorStop(1.0, "rgba(255, 205, 140, 0.0)");
+      gradTop.addColorStop(0.0, "rgba(175, 95, 52, 0.30)");
+      gradTop.addColorStop(1.0, "rgba(175, 95, 52, 0.0)");
       ctx.fillStyle = gradTop;
       ctx.fillRect(0, 8, 1024, 12);
 
-      // Dis kenar pahi (Bottom chamfer)
       const gradBottom = ctx.createLinearGradient(0, 236, 0, 248);
-      gradBottom.addColorStop(0.0, "rgba(255, 205, 140, 0.0)");
-      gradBottom.addColorStop(1.0, "rgba(255, 205, 140, 0.35)");
+      gradBottom.addColorStop(0.0, "rgba(175, 95, 52, 0.0)");
+      gradBottom.addColorStop(1.0, "rgba(175, 95, 52, 0.30)");
       ctx.fillStyle = gradBottom;
       ctx.fillRect(0, 236, 1024, 12);
-      ctx.fillStyle = "rgba(255, 205, 140, 0.75)";
+      ctx.fillStyle = "rgba(175, 95, 52, 0.70)";
       ctx.fillRect(0, 248, 1024, 4);
-      ctx.fillStyle = "rgba(20, 7, 2, 0.85)";
+      ctx.fillStyle = "rgba(15, 6, 2, 0.85)";
       ctx.fillRect(0, 252, 1024, 4);
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -744,7 +736,7 @@
     const boosterMat = new THREE.MeshBasicMaterial({ map: boosterTex });
     const bumperMat = new THREE.MeshStandardMaterial({ color: 0xff2e6d, roughness: 0.15, metalness: 0.3 });
     const treeMat = new THREE.MeshStandardMaterial({ color: 0x1f7332, roughness: 0.7 });
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a391c, roughness: 0.8 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x482410, roughness: 0.8 });
 
     // --- Procedural Golf Battle Köşeli Ahşap Engel Kesit Dokusu (Square Timber End Cap) ---
     function createWoodLogEndTexture() {
@@ -1769,6 +1761,7 @@
     scene.add(courseGroup);
 
     let colliders = [];
+    let cornerWedges = [];
     let treeColliders = [];
     let woodLogs = [];
     let speedBoosters = [];
@@ -1895,6 +1888,7 @@
         courseGroup.remove(courseGroup.children[0]);
       }
       colliders = [];
+      cornerWedges = [];
       treeColliders = [];
       woodLogs = [];
       speedBoosters = [];
@@ -2066,6 +2060,114 @@
         setFaceUV(1, 0, 1, 1, 1, 0, 0, 1, 0);
       }
       geo.attributes.uv.needsUpdate = true;
+    }
+
+    
+    // --- Golf Battle 45-Derece Açılı Ahşap Köşe Pahları (Bank Corner Wedges) ---
+    // Topun köşelerde sıkışmasını önler ve açılı bant vuruşları (ricochet / bank shots) yapmayı sağlar!
+    function addCornerWedge(cx, cz, dirX, dirZ, size = 0.72, y = 0.29, h = 0.58) {
+      const extraDepth = 0.35;
+      const visualH = h + extraDepth;
+      const yBot = (y - h * 0.5) - extraDepth;
+      const yTop = y + h * 0.5;
+
+      const geo = new THREE.BufferGeometry();
+      const T0 = [cx, yTop, cz];
+      const T1 = [cx + dirX * size, yTop, cz];
+      const T2 = [cx, yTop, cz + dirZ * size];
+      const B0 = [cx, yBot, cz];
+      const B1 = [cx + dirX * size, yBot, cz];
+      const B2 = [cx, yBot, cz + dirZ * size];
+
+      const nx = dirX * 0.70710678;
+      const nz = dirZ * 0.70710678;
+
+      let positions = [];
+      let normals = [];
+      let uvs = [];
+
+      function addTri(pA, pB, pC, n, uvA, uvB, uvC) {
+        positions.push(...pA, ...pB, ...pC);
+        normals.push(...n, ...n, ...n);
+        uvs.push(...uvA, ...uvB, ...uvC);
+      }
+
+      // Group 0 (3 vertices): Üst Kapak (Top Cap) - wallTopMat (üst küpeşte)
+      if (dirX * dirZ > 0) {
+        addTri(T0, T2, T1, [0, 1, 0], [0, 0], [0, 1], [1, 0]);
+      } else {
+        addTri(T0, T1, T2, [0, 1, 0], [0, 0], [1, 0], [0, 1]);
+      }
+
+      // Group 1 (6 vertices): Çarpışma Yüzeyi (Front 45-deg Face) - wallMat
+      if (dirX * dirZ > 0) {
+        addTri(T1, B1, T2, [nx, 0, nz], [0, 1], [0, 0], [1, 1]);
+        addTri(T2, B1, B2, [nx, 0, nz], [1, 1], [0, 0], [1, 0]);
+      } else {
+        addTri(T1, T2, B1, [nx, 0, nz], [0, 1], [1, 1], [0, 0]);
+        addTri(T2, B2, B1, [nx, 0, nz], [1, 1], [1, 0], [0, 0]);
+      }
+
+      // Group 1 (12 vertices): Arka Yan Yüzeyler (Back Faces against wall) - wallMat
+      if (dirZ > 0) {
+        addTri(T0, B0, T1, [0, 0, -dirZ], [0, 1], [0, 0], [1, 1]);
+        addTri(T1, B0, B1, [0, 0, -dirZ], [1, 1], [0, 0], [1, 0]);
+      } else {
+        addTri(T0, T1, B0, [0, 0, -dirZ], [0, 1], [1, 1], [0, 0]);
+        addTri(T1, B1, B0, [0, 0, -dirZ], [1, 1], [1, 0], [0, 0]);
+      }
+      if (dirX > 0) {
+        addTri(T0, T2, B0, [-dirX, 0, 0], [0, 1], [1, 1], [0, 0]);
+        addTri(T2, B2, B0, [-dirX, 0, 0], [1, 1], [1, 0], [0, 0]);
+      } else {
+        addTri(T0, B0, T2, [-dirX, 0, 0], [0, 1], [0, 0], [1, 1]);
+        addTri(T2, B0, B2, [-dirX, 0, 0], [1, 1], [0, 0], [1, 0]);
+      }
+
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+      geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+
+      // Multi-material grupları: 0: wallTopMat (üst pah), 1: wallMat (yan ahşap)
+      geo.addGroup(0, 3, 0);
+      geo.addGroup(3, 18, 1);
+
+      const mesh = new THREE.Mesh(geo, [wallTopMat, wallMat]);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      courseGroup.add(mesh);
+
+      // Fizik verileri
+      const v1x = cx + dirX * size;
+      const v1z = cz;
+      const v2x = cx;
+      const v2z = cz + dirZ * size;
+      const segDx = v2x - v1x;
+      const segDz = v2z - v1z;
+      const segLenSq = segDx * segDx + segDz * segDz;
+
+      cornerWedges.push({
+        cx: cx,
+        cz: cz,
+        dirX: dirX,
+        dirZ: dirZ,
+        size: size,
+        v1x: v1x,
+        v1z: v1z,
+        v2x: v2x,
+        v2z: v2z,
+        segDx: segDx,
+        segDz: segDz,
+        segLenSq: segLenSq,
+        nx: nx,
+        nz: nz,
+        midX: cx + dirX * size * 0.5,
+        midZ: cz + dirZ * size * 0.5,
+        yMin: yBot,
+        yMax: yTop + 2.0
+      });
+
+      return mesh;
     }
 
     function addWall(x, y, z, w, h, d) {
@@ -2457,6 +2559,10 @@
       addWall(1.92, 0.29, 0, 0.26, 0.58, 16.5);
       addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
       addWall(0, 0.29, 8.12, 3.58, 0.58, 0.26);
+      addCornerWedge(-1.79, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.79, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.79, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.79, -7.99, -1, 1, 0.75, 0.18, 0.36);
       addSand(1.0, 0.1, 2.5, 1.3, 3.0);
       addBumper(-1.0, 0.1, 2.5, 0.4);
     }
@@ -2468,6 +2574,10 @@
       addWall(1.92, 0.29, 0, 0.26, 0.58, 16.5);
       addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
       addWall(0, 0.29, 8.12, 3.58, 0.58, 0.26);
+      addCornerWedge(-1.79, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.79, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.79, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.79, -7.99, -1, 1, 0.75, 0.18, 0.36);
       addIce(0, 0.1, -1.0, 1.8, 3.6);
       addSand(-1.0, 0.1, -4.0, 1.2, 1.8);
       addBumper(-1.1, 0.1, 2.8, 0.38);
@@ -2490,6 +2600,15 @@
       addWall(5.22, 0.29, 5.25, 0.26, 0.58, 9.0);
       addWall(1.78, 0.29, 6.85, 0.26, 0.58, 5.4);
       addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
+      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
     }
 
     // --- Hole 4 (4. Çift Buz Geçidi - Yüksek Hızlı Düzlük) ---
@@ -2499,6 +2618,10 @@
       addWall(2.02, 0.29, 0, 0.26, 0.58, 17.5);
       addWall(0, 0.18, -8.62, 3.78, 0.36, 0.26);
       addWall(0, 0.29, 8.62, 3.78, 0.58, 0.26);
+      addCornerWedge(-1.89, 8.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 8.49, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.89, -8.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -8.49, -1, 1, 0.75, 0.18, 0.36);
       addIce(0, 0.1, -3.0, 1.9, 3.0);
       addIce(0, 0.1, 2.5, 1.9, 3.0);
       addBumper(-1.1, 0.1, -0.2, 0.40);
@@ -2549,6 +2672,12 @@
       addWall(5.22, 0.29, 2.75, 0.26, 0.58, 8.2);
       addWall(1.78, 0.29, 4.0, 0.26, 0.58, 5.4);
       addWall(3.5, 0.29, 6.82, 3.18, 0.58, 0.26);
+      addCornerWedge(-5.09, -6.69, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.91, -6.69, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-5.09, 1.19, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(5.09, -1.19, -1, 1, 0.85, 0.29, 0.58);
+      addCornerWedge(1.91, 6.69, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.09, 6.69, -1, -1, 0.75, 0.29, 0.58);
       addSand(3.5, 0.1, 1.2, 1.4, 1.4);
       addBumper(-3.5, 0.1, -0.6, 0.4);
     }
@@ -2592,6 +2721,10 @@
       addWall(-2.42, 0.85, 7.5, 0.26, 0.60, 6.8);
       addWall(2.42, 0.85, 7.5, 0.26, 0.60, 6.8);
       addWall(0, 0.85, 10.8, 4.58, 0.60, 0.28);
+      addCornerWedge(-1.89, -7.19, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -7.19, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-2.29, 10.65, 1, -1, 0.75, 0.85, 0.60);
+      addCornerWedge(2.29, 10.65, -1, -1, 0.75, 0.85, 0.60);
       addWall(-2.2, 0.85, 4.25, 0.52, 0.60, 0.26);
       addWall(2.2, 0.85, 4.25, 0.52, 0.60, 0.26);
       addIce(0, 0.65, 5.8, 2.0, 2.0);
@@ -2675,6 +2808,10 @@
       addWall(1.28, 0.85, 9.5, 0.26, 0.60, 5.7);
       addWall(6.72, 0.85, 9.5, 0.26, 0.60, 5.7);
       addWall(4.0, 0.85, 12.35, 5.18, 0.60, 0.28);
+      addCornerWedge(-5.79, -7.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-2.21, -7.49, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.41, 12.21, 1, -1, 0.75, 0.85, 0.60);
+      addCornerWedge(6.59, 12.21, -1, -1, 0.75, 0.85, 0.60);
       addWall(1.5, 0.85, 6.75, 0.52, 0.60, 0.26);
       addWall(6.5, 0.85, 6.75, 0.52, 0.60, 0.26);
       addBumper(2.4, 0.65, 8.2, 0.40);
@@ -3439,6 +3576,50 @@
             if (ballVel.length() < 12.0) ballVel.setLength(12.0);
             ballPos.addScaledVector(normal, 0.08);
             playBumper();
+          }
+        });
+
+        
+        // Köşe Pahı Çarpışmaları: 45-derecelik açılı ahşap köşelerden kusursuz bant sekmesi!
+        cornerWedges.forEach(w => {
+          if (ballPos.y < w.yMin || ballPos.y > w.yMax) return;
+
+          // 1. Segment [V1, V2] üzerindeki en yakın noktayı hesapla
+          const p1x = ballPos.x - w.v1x;
+          const p1z = ballPos.z - w.v1z;
+          let t = (p1x * w.segDx + p1z * w.segDz) / w.segLenSq;
+          t = Math.max(0, Math.min(1, t));
+
+          const closeX = w.v1x + t * w.segDx;
+          const closeZ = w.v1z + t * w.segDz;
+
+          const dx = ballPos.x - closeX;
+          const dz = ballPos.z - closeZ;
+          const dist = Math.hypot(dx, dz);
+
+          // Topun köşenin iç tarafında olup olmadığını kontrol et
+          const dotNorm = (ballPos.x - w.midX) * w.nx + (ballPos.z - w.midZ) * w.nz;
+
+          // Eğer top çarpma mesafesindeyse veya köşenin arkasına girmişse
+          if (dist < ballRadius || dotNorm < 0) {
+            let colNx = w.nx;
+            let colNz = w.nz;
+            if (dist > 0.0001 && dotNorm >= 0) {
+              colNx = dx / dist;
+              colNz = dz / dist;
+            }
+
+            const vDot = ballVel.x * colNx + ballVel.z * colNz;
+            if (vDot < 0) {
+              // Yüksek hassasiyetli 45-derece elastik bant yansıması
+              ballVel.x = (ballVel.x - 1.85 * vDot * colNx) * 0.88;
+              ballVel.z = (ballVel.z - 1.85 * vDot * colNz) * 0.88;
+              playBounce();
+            }
+
+            // Topu köşe yüzeyinden güvenli mesafeye çıkar
+            ballPos.x = closeX + colNx * (ballRadius + 0.015);
+            ballPos.z = closeZ + colNz * (ballRadius + 0.015);
           }
         });
 
