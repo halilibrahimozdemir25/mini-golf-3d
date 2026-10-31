@@ -757,39 +757,31 @@
     const treeMat = new THREE.MeshStandardMaterial({ color: 0x1f7332, roughness: 0.7 });
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a391c, roughness: 0.8 });
 
-    // --- Procedural Golf Battle Ağaç Kütüğü Kesit Dokusu (Log Tree Rings End Cap) ---
+    // --- Procedural Golf Battle Köşeli Ahşap Engel Kesit Dokusu (Square Timber End Cap) ---
     function createWoodLogEndTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 256;
       canvas.height = 256;
       const ctx = canvas.getContext('2d');
 
-      // Doğal çam kütüğü açık taban rengi
-      ctx.fillStyle = '#c99661';
+      // 1. Dış koyu ahşap kenar çerçevesi (Köşeli kereste)
+      ctx.fillStyle = '#3c200c';
       ctx.fillRect(0, 0, 256, 256);
 
-      const cx = 128, cy = 128;
-
-      // 1. Dış kabuk koyu halkası (Outer bark ring)
-      ctx.fillStyle = '#3a1f0a';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 126, 0, Math.PI * 2);
-      ctx.fill();
-
+      // 2. Ana doğal açık çam gövdesi
       ctx.fillStyle = '#b8814c';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 116, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(8, 8, 240, 240);
 
-      // 2. Yıllık büyüme halkaları (Tree growth rings)
+      // 3. Yıllık büyüme halkaları (Tree growth rings)
+      const cx = 134, cy = 122;
       const numRings = 9;
       for (let i = 1; i <= numRings; i++) {
-        const r = (i / numRings) * 110;
-        ctx.strokeStyle = (i % 2 === 0) ? 'rgba(92, 49, 17, 0.75)' : 'rgba(125, 71, 28, 0.55)';
-        ctx.lineWidth = 2.8;
+        const r = (i / numRings) * 115;
+        ctx.strokeStyle = (i % 2 === 0) ? 'rgba(92, 49, 17, 0.70)' : 'rgba(125, 71, 28, 0.50)';
+        ctx.lineWidth = 2.6;
         ctx.beginPath();
         for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.1) {
-          const wobble = Math.sin(a * 5 + i) * 1.8 + Math.cos(a * 3) * 1.2;
+          const wobble = Math.sin(a * 4 + i) * 2.0 + Math.cos(a * 3) * 1.5;
           const x = cx + (r + wobble) * Math.cos(a);
           const y = cy + (r + wobble) * Math.sin(a);
           if (a === 0) ctx.moveTo(x, y);
@@ -798,22 +790,53 @@
         ctx.stroke();
       }
 
-      // 3. Merkez öz odun (Dark center pith)
+      // 4. Merkez öz odun (Center pith)
       ctx.fillStyle = '#5c2d0c';
       ctx.beginPath();
       ctx.arc(cx, cy, 7, 0, Math.PI * 2);
       ctx.fill();
 
-      // 4. Kılcal kuruma çatlakları (Radial drying cracks)
+      // 5. Kılcal kuruma çatlakları
       ctx.strokeStyle = 'rgba(60, 28, 8, 0.65)';
-      ctx.lineWidth = 1.4;
-      const crackAngles = [0.4, 1.8, 3.5, 4.9];
+      ctx.lineWidth = 1.6;
+      const crackAngles = [0.35, 1.85, 3.45, 5.0];
       crackAngles.forEach(ang => {
         ctx.beginPath();
         ctx.moveTo(cx, cy);
-        const len = 42 + ((ang * 17) % 45);
+        const len = 48 + ((ang * 23) % 40);
         ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
         ctx.stroke();
+      });
+
+      // 6. 4 Köşede Golf Battle Dövme Demir Köşebent Plakaları ve Perçin Cıvataları
+      const bracketSize = 44;
+      const bracketThick = 14;
+      ctx.fillStyle = '#2d2218';
+
+      // Sol üst, sağ üst, sol alt, sağ alt L-şekilli köşebentler
+      const corners = [
+        [0, 0, 1, 1],
+        [256, 0, -1, 1],
+        [0, 256, 1, -1],
+        [256, 256, -1, -1]
+      ];
+      corners.forEach(([x, y, sx, sy]) => {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + sx * bracketSize, y);
+        ctx.lineTo(x + sx * bracketSize, y + sy * bracketThick);
+        ctx.lineTo(x + sx * bracketThick, y + sy * bracketThick);
+        ctx.lineTo(x + sx * bracketThick, y + sy * bracketSize);
+        ctx.lineTo(x, y + sy * bracketSize);
+        ctx.closePath();
+        ctx.fill();
+
+        // Demir perçin cıvatası (Rivet bolt)
+        ctx.fillStyle = '#6e5a48';
+        ctx.beginPath();
+        ctx.arc(x + sx * (bracketThick * 0.5 + 2), y + sy * (bracketThick * 0.5 + 2), 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2d2218';
       });
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -1745,34 +1768,32 @@
       courseGroup.add(flag);
     }
 
-    // --- Golf Battle Tarzı Uzun Yatay Kütük / Odun Engeli (Horizontal Timber Log) ---
-    function createWoodLogMesh(length = 1.8, radius = 0.18) {
+    // --- Golf Battle Tarzı Köşeli Ahşap / Kalas / Kiriş Engeli (Square Timber Beam) ---
+    function createWoodLogMesh(length = 1.8, width = 0.34, height = 0.30) {
       const group = new THREE.Group();
 
-      // 1. Ana silindirik kütük gövdesi
-      const geo = new THREE.CylinderGeometry(radius, radius, length, 24, 1, false);
-      // Silindiri X eksenine yatır (uzun odun)
-      geo.rotateZ(Math.PI / 2);
+      // 1. Ana köşeli ahşap kalas gövdesi (BoxGeometry: length X ekseni boyunca, height Y, width Z)
+      const geo = new THREE.BoxGeometry(length, height, width);
 
-      // UV haritalama: silindirin uzun yüzeyinde ahşap deseni boylu boyunca aksın
+      // UV haritalama: uzun yüzeylerde ahşap deseni boylu boyunca aksın
       const uvs = geo.attributes.uv.array;
       const rep = Math.max(1, length / 1.5);
-      for (let i = 0; i < uvs.length; i += 2) {
+      // BoxGeometry: +Y, -Y, +Z, -Z yüzeyleri (indeks 16...47)
+      for (let i = 16; i < 48; i += 2) {
         uvs[i] *= rep;
       }
       geo.attributes.uv.needsUpdate = true;
 
-      // [sideMat, topCapMat, bottomCapMat]
-      const logMaterials = [logBarkMat, logEndMat, logEndMat];
-      const logMesh = new THREE.Mesh(geo, logMaterials);
-      logMesh.castShadow = true;
-      logMesh.receiveShadow = true;
-      group.add(logMesh);
+      // [face+X (end), face-X (end), face+Y (top), face-Y (bottom), face+Z (front), face-Z (back)]
+      const materials = [logEndMat, logEndMat, woodMat, woodMat, woodMat, woodMat];
+      const beamMesh = new THREE.Mesh(geo, materials);
+      beamMesh.castShadow = true;
+      beamMesh.receiveShadow = true;
+      group.add(beamMesh);
 
-      // 2. Golf Battle tarzı dövme demir / bronz sabitleme kelepçeleri
-      const ringGeo = new THREE.CylinderGeometry(radius * 1.04, radius * 1.04, 0.045, 24);
-      ringGeo.rotateZ(Math.PI / 2);
-      const ringMat = new THREE.MeshStandardMaterial({
+      // 2. Golf Battle tarzı dövme demir sabitleme kelepçeleri (Köşeli metal kuşaklar)
+      const strapGeo = new THREE.BoxGeometry(0.055, height * 1.05, width * 1.05);
+      const strapMat = new THREE.MeshStandardMaterial({
         color: 0x3d3126,
         roughness: 0.45,
         metalness: 0.65
@@ -1780,34 +1801,39 @@
 
       const offsetDist = length * 0.5 - 0.16;
       if (offsetDist > 0.15) {
-        const ring1 = new THREE.Mesh(ringGeo, ringMat);
-        ring1.position.set(-offsetDist, 0, 0);
-        ring1.castShadow = true;
-        group.add(ring1);
+        const strap1 = new THREE.Mesh(strapGeo, strapMat);
+        strap1.position.set(-offsetDist, 0, 0);
+        strap1.castShadow = true;
+        group.add(strap1);
 
-        const ring2 = new THREE.Mesh(ringGeo, ringMat);
-        ring2.position.set(offsetDist, 0, 0);
-        ring2.castShadow = true;
-        group.add(ring2);
+        const strap2 = new THREE.Mesh(strapGeo, strapMat);
+        strap2.position.set(offsetDist, 0, 0);
+        strap2.castShadow = true;
+        group.add(strap2);
       }
 
       return group;
     }
 
-    function addWoodLog(x, y, z, length = 1.8, radius = 0.18, angle = 0) {
-      const mesh = createWoodLogMesh(length, radius);
-      mesh.position.set(x, y + radius, z);
+    function addWoodLog(x, y, z, length = 1.8, width = 0.34, angle = 0) {
+      // Köşeli kereste boyutları (Genişlik: 0.34m, Yükseklik: 0.30m)
+      const beamW = (width !== undefined && width > 0.22) ? width : (width ? width * 2.0 : 0.34);
+      const beamH = 0.30;
+      const mesh = createWoodLogMesh(length, beamW, beamH);
+      mesh.position.set(x, y + beamH * 0.5, z);
       mesh.rotation.y = angle;
       courseGroup.add(mesh);
 
       woodLogs.push({
         x: x,
-        y: y + radius,
+        y: y + beamH * 0.5,
         z: z,
         baseY: y,
         length: length,
         halfL: length * 0.5,
-        radius: radius,
+        width: beamW,
+        halfW: beamW * 0.5,
+        height: beamH,
         angle: angle,
         cosA: Math.cos(angle),
         sinA: Math.sin(angle),
@@ -2080,8 +2106,12 @@
       addWall(-2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
       addWall(2.02, 0.95, -0.8, 0.26, 1.40, 3.4);
 
-      // Tramplin altı katı ahşap blokaj (Top asla rampa altına veya boşluğa kaçamaz!)
-      addWall(0, 0.47, 0.90, 3.8, 0.94, 0.26);
+      // Tramplin altı görsel ahşap eteklik (Collider EKLEMEZ! Uçuş yolunda görünmez duvar oluşmasını önler)
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.85, 0.1), wallMat);
+      skirt.position.set(0, 0.42, 0.85);
+      skirt.castShadow = true;
+      skirt.receiveShadow = true;
+      courseGroup.add(skirt);
 
       // 3. Kesintisiz kurtarma zemini ve rampadan adaya geçiş (z: 0.9'dan 2.5'e, y: 0.1'den 0.65'e yükselen güvenli rampa)
       const recRamp = addFloor(0, 0.375, 1.7, 6.4, 0.2, 1.8);
@@ -2437,11 +2467,11 @@
       });
     }
 
-    // --- Golf Battle Uzun Odun / Kütük Çarpışma Çözümleyici (Milimetrik Hassas Silindir Fiziği) ---
+    // --- Golf Battle Köşeli Ahşap Kalas / Kiriş Çarpışma Çözümleyici (Oriented Box Collider) ---
     function resolveWoodLogCollisions() {
       woodLogs.forEach(log => {
-        // Dikey yükseklik kontrolü: Top kütüğün üzerinden güvenle uçuyorsa çarpışma sayılmaz
-        if (isAirborne && (ballPos.y - ballRadius > log.baseY + log.radius * 2.0 + 0.04)) {
+        // Dikey yükseklik kontrolü: Top köşeli kalasın üzerinden güvenle uçuyorsa çarpışma sayılmaz
+        if (isAirborne && (ballPos.y - ballRadius > log.baseY + log.height + 0.04)) {
           return;
         }
         if (ballPos.y + ballRadius < log.baseY - 0.1) {
@@ -2451,19 +2481,19 @@
         const dx = ballPos.x - log.x;
         const dz = ballPos.z - log.z;
 
-        // Kütüğün yerel eksenine dönüştür (localX: kütük gövdesi, localZ: kütük kalınlığı)
+        // Kütüğün yerel eksenine dönüştür (localX: kütük gövdesi, localZ: kütük genişliği)
         const localX = dx * log.cosA - dz * log.sinA;
         const localZ = dx * log.sinA + dz * log.cosA;
 
-        // Silindirin düz kesit uçları (-halfL ... +halfL) ve silindirik gövdesi (-radius ... +radius)
+        // Köşeli kereste kutu sınırları (-halfL ... +halfL) ve (-halfW ... +halfW)
         const cx = Math.max(-log.halfL, Math.min(log.halfL, localX));
-        const cz = Math.max(-log.radius, Math.min(log.radius, localZ));
+        const cz = Math.max(-log.halfW, Math.min(log.halfW, localZ));
 
         const diffX = localX - cx;
         const diffZ = localZ - cz;
         const dist = Math.hypot(diffX, diffZ);
 
-        // YALNIZCA topun yüzeyi kütüğe tam temas ettiğinde çarpışma tetiklenir (Sıfır hayalet alan!)
+        // YALNIZCA topun yüzeyi köşeli ahşaba temas ettiğinde çarpışma tetiklenir (Tam geometrik temas)
         if (dist < ballRadius) {
           let normLocalX = 0;
           let normLocalZ = 0;
@@ -2473,10 +2503,10 @@
             normLocalX = diffX / dist;
             normLocalZ = diffZ / dist;
           } else {
-            // Top merkezinin kütük içine doğrudan girmesi durumu
-            if (Math.abs(localZ) / log.radius > Math.abs(localX) / log.halfL) {
+            // Top merkezinin kutu içine girmesi durumu
+            if (Math.abs(localZ) / log.halfW > Math.abs(localX) / log.halfL) {
               normLocalZ = Math.sign(localZ) || 1;
-              overlap = log.radius + ballRadius - Math.abs(localZ);
+              overlap = log.halfW + ballRadius - Math.abs(localZ);
             } else {
               normLocalX = Math.sign(localX) || 1;
               overlap = log.halfL + ballRadius - Math.abs(localX);
@@ -2493,10 +2523,10 @@
 
           const dot = ballVel.x * normWorldX + ballVel.z * normWorldZ;
           if (dot < 0) {
-            // Ahşap kütük elastik sekme katsayısı
+            // Köşeli ahşap kalas elastik sekme katsayısı
             ballVel.x = (ballVel.x - 1.82 * dot * normWorldX) * 0.82;
             ballVel.z = (ballVel.z - 1.82 * dot * normWorldZ) * 0.82;
-            // Hızlı çarpmada gerçekçi hafif sekme hoplaması
+            // Hızlı çarpmada hafif dikey sekme hoplaması
             if (ballVel.length() > 3.0 && !isAirborne) {
               ballVel.y = Math.min(ballVel.length() * 0.14, 1.8);
               isAirborne = true;
