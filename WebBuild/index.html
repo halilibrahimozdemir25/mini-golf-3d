@@ -379,6 +379,126 @@
       cursor: pointer;
       box-shadow: 0 6px 18px rgba(31, 201, 83, 0.4);
     }
+  
+    /* Voodoo Innovation Top Bar */
+    #voodoo-mode-bar {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 50px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(8, 16, 12, 0.90);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 20px;
+      padding: 4px 6px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 12;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      max-width: 96%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .voodoo-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #b8d4c2;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .voodoo-tab:active {
+      transform: scale(0.94);
+    }
+    .voodoo-tab.active {
+      background: linear-gradient(135deg, #1fc953, #169e3f);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 2px 8px rgba(31, 201, 83, 0.45);
+    }
+
+    /* Voodoo Guidance Dynamic Toast */
+    #voodoo-toast {
+      display: none;
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 94px);
+      left: 50%;
+      transform: translateX(-50%) scale(1);
+      background: rgba(10, 20, 15, 0.94);
+      border: 1.5px solid #4df373;
+      border-radius: 16px;
+      padding: 6px 16px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      pointer-events: none;
+      z-index: 15;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      white-space: nowrap;
+      text-align: center;
+      opacity: 0;
+    }
+
+    /* Draw-a-Bant Floating Controls (Option 2) */
+    #draw-wall-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 18, 14, 0.94);
+      border: 1.5px solid rgba(255, 214, 50, 0.6);
+      border-radius: 22px;
+      padding: 6px 12px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 25;
+      box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+    }
+    .draw-mode-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 14px;
+      padding: 7px 12px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .draw-mode-btn.active {
+      background: linear-gradient(135deg, #ffd632, #f5a623);
+      color: #1a1a1a;
+      border-color: #ffe680;
+      box-shadow: 0 2px 10px rgba(255, 214, 50, 0.5);
+    }
+    .draw-action-btn {
+      background: rgba(255, 75, 75, 0.2);
+      border: 1px solid rgba(255, 75, 75, 0.4);
+      border-radius: 14px;
+      padding: 7px 10px;
+      color: #ff9999;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #draw-status-badge {
+      color: #ffd632;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 0 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -398,6 +518,26 @@
       <button id="restart-btn" onclick="retryHole()" title="Yeniden Başlat">🔄</button>
     </div>
   </div>
+
+  <!-- Voodoo Innovation Mode Switcher Bar -->
+  <div id="voodoo-mode-bar">
+    <button class="voodoo-tab active" id="tab-classic" onclick="switchVoodooMode('classic')">⛳ Klasik</button>
+    <button class="voodoo-tab" id="tab-gate" onclick="switchVoodooMode('gate')">🔒 1. Şalter & Kilit</button>
+    <button class="voodoo-tab" id="tab-draw" onclick="switchVoodooMode('draw')">✏️ 2. Duvar Çiz</button>
+    <button class="voodoo-tab" id="tab-portal" onclick="switchVoodooMode('portal')">🌀 3. Portal</button>
+  </div>
+
+  <!-- Dynamic Guidance Toast for Voodoo Mechanics -->
+  <div id="voodoo-toast"></div>
+
+  <!-- Draw-a-Bant Floating Controls (Option 2) -->
+  <div id="draw-wall-panel" style="display:none;">
+    <button id="draw-btn-draw" class="draw-mode-btn active" onclick="setDrawTool('draw')">✏️ Duvar Çiz</button>
+    <button id="draw-btn-shoot" class="draw-mode-btn" onclick="setDrawTool('shoot')">🏌️ Vuruş Yap</button>
+    <button id="draw-btn-clear" class="draw-action-btn" onclick="clearDrawnWalls()">🗑️ Temizle</button>
+    <span id="draw-status-badge">Bant: 0/1</span>
+  </div>
+
 
   <div id="power-badge" style="display:none !important;"></div>
 
@@ -577,6 +717,111 @@
         osc.stop(startT + 0.28);
       });
     }
+
+    function playSwitchTrigger() {
+      triggerHaptic('medium');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(220, t);
+      osc1.frequency.exponentialRampToValueAtTime(880, t + 0.14);
+      gain1.gain.setValueAtTime(0.5, t);
+      gain1.gain.exponentialRampToValueAtTime(0.01, t + 0.14);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 0.14);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(587.33, t + 0.04);
+      osc2.frequency.setValueAtTime(880, t + 0.10);
+      gain2.gain.setValueAtTime(0.4, t + 0.04);
+      gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.30);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(t + 0.04);
+      osc2.stop(t + 0.30);
+    }
+
+    function playGateOpen() {
+      triggerHaptic('heavy');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t + idx * 0.04);
+        gain.gain.setValueAtTime(0.35, t + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + idx * 0.04 + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t + idx * 0.04);
+        osc.stop(t + idx * 0.04 + 0.45);
+      });
+    }
+
+    function playShieldDeflect() {
+      triggerHaptic('light');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.12);
+    }
+
+    function playWallSpawn() {
+      triggerHaptic('medium');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(120, t);
+      osc.frequency.exponentialRampToValueAtTime(35, t + 0.15);
+      gain.gain.setValueAtTime(0.6, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    }
+
+    function playPortalWarp() {
+      triggerHaptic('hole');
+      const ctx = ensureAudioReady();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(320, t);
+      osc.frequency.exponentialRampToValueAtTime(1150, t + 0.16);
+      osc.frequency.exponentialRampToValueAtTime(280, t + 0.38);
+      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.38);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.38);
+    }
+
 
     // --- Three.js Setup ---
     const container = document.getElementById('canvas-container');
@@ -2034,7 +2279,569 @@
 
     function retryHole() {
       document.getElementById('gameover-modal').style.display = 'none';
-      buildCourse(currentHole);
+      if (currentVoodooMode === 'classic') {
+        buildCourse(currentHole);
+      } else if (currentVoodooMode === 'gate') {
+        loadShowcaseGate();
+      } else if (currentVoodooMode === 'draw') {
+        loadShowcaseDraw();
+      } else if (currentVoodooMode === 'portal') {
+        loadShowcasePortal();
+      }
+    }
+
+    
+    // --- Voodoo Innovation State & Mechanics Data ---
+    let currentVoodooMode = 'classic'; // 'classic' | 'gate' | 'draw' | 'portal'
+    let voodooToastTimeout = null;
+
+    // Option 1: Trigger & Gate
+    let targetSwitches = [];
+    let cupShieldGate = null;
+    let isCupLocked = false;
+
+    // Option 2: Draw-a-Bant
+    let drawnWalls = [];
+    let isDrawingWall = false;
+    let drawStart3D = null;
+    let drawPreviewMesh = null;
+    let drawToolActive = false;
+    const maxDrawnWalls = 1;
+
+    // Option 3: Portal & Dimension Warp
+    let portalPairs = [];
+
+    // --- Dynamic Voodoo Toast ---
+    function showVoodooToast(text, duration = 3500) {
+      const toast = document.getElementById('voodoo-toast');
+      if (!toast) return;
+      toast.innerText = text;
+      toast.style.display = 'block';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) scale(1)';
+      if (voodooToastTimeout) clearTimeout(voodooToastTimeout);
+      voodooToastTimeout = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) scale(0.95)';
+        setTimeout(() => { if (toast.style.opacity === '0') toast.style.display = 'none'; }, 260);
+      }, duration);
+    }
+
+    // --- Option 1: Trigger & Gate Implementation ---
+    function addTargetSwitch(x, y, z, facingAngle = 0) {
+      const group = new THREE.Group();
+      group.position.set(x, y, z);
+      group.rotation.y = facingAngle;
+
+      // Base bracket
+      const baseGeo = new THREE.CylinderGeometry(0.55, 0.60, 0.08, 16);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.4, metalness: 0.8 });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.position.y = 0.04;
+      group.add(baseMesh);
+
+      // Neon rim
+      const rimGeo = new THREE.TorusGeometry(0.52, 0.045, 8, 24);
+      rimGeo.rotateX(Math.PI * 0.5);
+      const rimMat = new THREE.MeshStandardMaterial({
+        color: 0xff2a44,
+        emissive: 0xff1122,
+        emissiveIntensity: 0.9,
+        roughness: 0.2
+      });
+      const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+      rimMesh.position.y = 0.08;
+      group.add(rimMesh);
+
+      // Spring-loaded target button
+      const btnGeo = new THREE.CylinderGeometry(0.38, 0.40, 0.16, 16);
+      const btnMat = new THREE.MeshStandardMaterial({
+        color: 0xff3b30,
+        emissive: 0xff2233,
+        emissiveIntensity: 0.6,
+        roughness: 0.3
+      });
+      const btnMesh = new THREE.Mesh(btnGeo, btnMat);
+      btnMesh.position.y = 0.14;
+      group.add(btnMesh);
+
+      // Floating target ring
+      const iconGeo = new THREE.RingGeometry(0.12, 0.24, 16);
+      iconGeo.rotateX(-Math.PI * 0.5);
+      const iconMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+      const iconMesh = new THREE.Mesh(iconGeo, iconMat);
+      iconMesh.position.y = 0.23;
+      group.add(iconMesh);
+
+      courseGroup.add(group);
+
+      const sw = {
+        x, y, z,
+        radius: 0.55,
+        isTriggered: false,
+        group,
+        rimMat,
+        btnMat,
+        btnMesh
+      };
+      targetSwitches.push(sw);
+      return sw;
+    }
+
+    function addCupShieldGate(pos) {
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      // Forcefield dome
+      const domeGeo = new THREE.SphereGeometry(0.72, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      const domeMat = new THREE.MeshStandardMaterial({
+        color: 0xff0055,
+        emissive: 0xff0044,
+        emissiveIntensity: 0.75,
+        transparent: true,
+        opacity: 0.54,
+        roughness: 0.1,
+        metalness: 0.2,
+        side: THREE.DoubleSide
+      });
+      const domeMesh = new THREE.Mesh(domeGeo, domeMat);
+      domeMesh.position.y = 0.02;
+      group.add(domeMesh);
+
+      // Neon base rim
+      const ringGeo = new THREE.RingGeometry(0.68, 0.76, 24);
+      ringGeo.rotateX(-Math.PI * 0.5);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3377, side: THREE.DoubleSide });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.y = 0.03;
+      group.add(ringMesh);
+
+      // Floating lock icon
+      const lockGroup = new THREE.Group();
+      lockGroup.position.set(0, 0.95, 0);
+
+      const shackleGeo = new THREE.TorusGeometry(0.12, 0.035, 8, 16, Math.PI);
+      shackleGeo.rotateZ(Math.PI);
+      const lockMat = new THREE.MeshStandardMaterial({ color: 0xffdd44, metalness: 0.8, roughness: 0.2 });
+      const shackleMesh = new THREE.Mesh(shackleGeo, lockMat);
+      shackleMesh.position.y = 0.08;
+      lockGroup.add(shackleMesh);
+
+      const bodyGeo = new THREE.BoxGeometry(0.24, 0.18, 0.10);
+      const bodyMesh = new THREE.Mesh(bodyGeo, lockMat);
+      lockGroup.add(bodyMesh);
+
+      group.add(lockGroup);
+      courseGroup.add(group);
+
+      cupShieldGate = {
+        pos: pos.clone(),
+        radius: 0.72,
+        group,
+        domeMat,
+        domeMesh,
+        lockGroup,
+        shattering: false
+      };
+      isCupLocked = true;
+      return cupShieldGate;
+    }
+
+    function unlockCupGate() {
+      if (!cupShieldGate || cupShieldGate.shattering) return;
+      cupShieldGate.shattering = true;
+      isCupLocked = false;
+      playGateOpen();
+      triggerHaptic('heavy');
+      showVoodooToast("🔓 KİLİT AÇILDI! ŞİMDİ DELİĞE VUR! ⛳", 4000);
+
+      let elapsed = 0;
+      const interval = setInterval(() => {
+        elapsed += 0.03;
+        if (!cupShieldGate) { clearInterval(interval); return; }
+        cupShieldGate.domeMesh.scale.multiplyScalar(1.045);
+        cupShieldGate.domeMat.opacity = Math.max(0, 0.54 - elapsed * 1.6);
+        cupShieldGate.lockGroup.position.y += 0.06;
+        cupShieldGate.lockGroup.scale.multiplyScalar(0.91);
+        if (elapsed >= 0.35) {
+          clearInterval(interval);
+          if (cupShieldGate && cupShieldGate.group.parent) {
+            cupShieldGate.group.parent.remove(cupShieldGate.group);
+          }
+          cupShieldGate = null;
+        }
+      }, 30);
+    }
+
+    // --- Option 2: Draw-a-Bant Implementation ---
+    const drawRaycaster = new THREE.Raycaster();
+    const drawMouseVec = new THREE.Vector2();
+    const drawPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.20);
+
+    function getFloorIntersection(screenX, screenY) {
+      drawMouseVec.x = (screenX / window.innerWidth) * 2 - 1;
+      drawMouseVec.y = -(screenY / window.innerHeight) * 2 + 1;
+      drawRaycaster.setFromCamera(drawMouseVec, camera);
+      const target = new THREE.Vector3();
+      const hit = drawRaycaster.ray.intersectPlane(drawPlane, target);
+      return hit ? target : null;
+    }
+
+    function createDrawPreviewMesh() {
+      const geo = new THREE.BoxGeometry(1, 0.30, 0.34);
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xffd632,
+        emissive: 0xffa500,
+        emissiveIntensity: 0.7,
+        transparent: true,
+        opacity: 0.65,
+        roughness: 0.2
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      scene.add(mesh);
+      return mesh;
+    }
+
+    function setDrawTool(tool) {
+      drawToolActive = (tool === 'draw');
+      const btnDraw = document.getElementById('draw-btn-draw');
+      const btnShoot = document.getElementById('draw-btn-shoot');
+      if (btnDraw && btnShoot) {
+        if (drawToolActive) {
+          btnDraw.classList.add('active');
+          btnShoot.classList.remove('active');
+          showVoodooToast("✏️ Boşluğa Çizgi Çekerek Kendi Duvarını Kur!");
+        } else {
+          btnDraw.classList.remove('active');
+          btnShoot.classList.add('active');
+          showVoodooToast("🎯 Topu Geri Çek ve Sektir!");
+        }
+      }
+    }
+
+    function clearDrawnWalls() {
+      if (drawnWalls.length > 0) {
+        drawnWalls.forEach(w => {
+          const idx = woodLogs.findIndex(l => l.mesh === w);
+          if (idx !== -1) woodLogs.splice(idx, 1);
+          if (w.parent) w.parent.remove(w);
+        });
+        drawnWalls = [];
+      }
+      setDrawTool('draw');
+      updateDrawUI();
+    }
+
+    function updateDrawUI() {
+      const badge = document.getElementById('draw-status-badge');
+      if (badge) {
+        badge.innerText = `Bant: ${drawnWalls.length}/${maxDrawnWalls}`;
+        badge.style.color = (drawnWalls.length >= maxDrawnWalls) ? '#4df373' : '#ffd632';
+      }
+    }
+
+    // --- Option 3: Quantum Portal Implementation ---
+    function createPortalMesh(primaryColor, glowColor) {
+      const group = new THREE.Group();
+      // Torus ring
+      const rimGeo = new THREE.TorusGeometry(0.48, 0.05, 12, 32);
+      const rimMat = new THREE.MeshStandardMaterial({
+        color: primaryColor,
+        emissive: glowColor,
+        emissiveIntensity: 1.2,
+        roughness: 0.1,
+        metalness: 0.6
+      });
+      const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+      group.add(rimMesh);
+
+      // Inner swirling vortex disc
+      const discGeo = new THREE.CircleGeometry(0.44, 24);
+      const discMat = new THREE.MeshBasicMaterial({
+        color: primaryColor,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide
+      });
+      const discMesh = new THREE.Mesh(discGeo, discMat);
+      group.add(discMesh);
+
+      // Base pedestal
+      const baseGeo = new THREE.BoxGeometry(1.1, 0.1, 0.3);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.5, metalness: 0.8 });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.position.y = -0.45;
+      group.add(baseMesh);
+
+      group.userData = { discMesh, rimMat, angle: 0 };
+      return group;
+    }
+
+    function addPortalPair(bluePos, blueNorm, orangePos, orangeNorm) {
+      const blueGroup = createPortalMesh(0x00d4ff, 0x0066ff);
+      blueGroup.position.copy(bluePos);
+      blueGroup.rotation.y = Math.atan2(blueNorm.x, blueNorm.z);
+      courseGroup.add(blueGroup);
+
+      const orangeGroup = createPortalMesh(0xff7700, 0xff3300);
+      orangeGroup.position.copy(orangePos);
+      orangeGroup.rotation.y = Math.atan2(orangeNorm.x, orangeNorm.z);
+      courseGroup.add(orangeGroup);
+
+      const pair = {
+        blue: {
+          pos: bluePos.clone(),
+          norm: blueNorm.clone().normalize(),
+          group: blueGroup,
+          radius: 0.45
+        },
+        orange: {
+          pos: orangePos.clone(),
+          norm: orangeNorm.clone().normalize(),
+          group: orangeGroup,
+          radius: 0.45
+        },
+        cooldown: 0
+      };
+      portalPairs.push(pair);
+      return pair;
+    }
+
+    // --- Mode Switcher ---
+    function switchVoodooMode(mode) {
+      currentVoodooMode = mode;
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTab = document.getElementById('tab-' + mode);
+      if (activeTab) activeTab.classList.add('active');
+
+      const drawPanel = document.getElementById('draw-wall-panel');
+      if (drawPanel) {
+        drawPanel.style.display = (mode === 'draw') ? 'flex' : 'none';
+      }
+
+      if (mode === 'classic') {
+        buildCourse(currentHole);
+        showVoodooToast("⛳ Klasik Seviye 1-10", 2500);
+      } else if (mode === 'gate') {
+        loadShowcaseGate();
+      } else if (mode === 'draw') {
+        loadShowcaseDraw();
+      } else if (mode === 'portal') {
+        loadShowcasePortal();
+      }
+    }
+
+    // Showcase 1: Trigger & Gate
+    function loadShowcaseGate() {
+      while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
+      colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
+      speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
+      icePatches = []; jumpRamps = []; floorMeshes = [];
+      targetSwitches = []; cupShieldGate = null; isCupLocked = false;
+      drawnWalls = []; isDrawingWall = false;
+      if (drawPreviewMesh) drawPreviewMesh.visible = false;
+      portalPairs = [];
+
+      holeCupPos.set(0, 0.1, 6.0);
+      ballPos.set(0, 0.22, -6.0);
+      lastSafePos.copy(ballPos);
+      ballVel.set(0, 0, 0);
+      isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
+      sinkFallVel = 0; strokes = 0;
+      ballMesh.scale.set(1, 1, 1);
+      ballMesh.rotation.set(0, 0, 0);
+      ballMesh.visible = true;
+
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTabGate = document.getElementById('tab-gate');
+      if (activeTabGate) activeTabGate.classList.add('active');
+      const tutHandGate = document.getElementById('tutorial-hand');
+      if (tutHandGate) tutHandGate.style.display = 'none';
+      const drawPanelGate = document.getElementById('draw-wall-panel');
+      if (drawPanelGate) drawPanelGate.style.display = 'none';
+      updateHUD();
+      document.getElementById('gameover-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+
+      buildShowcaseGateCourse();
+      buildCupAndFlag(holeCupPos);
+      scene.updateMatrixWorld(true);
+
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, -6.0) ?? 0.0;
+      lastGroundY = initGroundY;
+      ballPos.y = initGroundY + ballRadius;
+      lastSafePos.copy(ballPos);
+
+      camYaw = 0;
+      camPitch = 0.42;
+      showVoodooToast("🔒 Önce Kırmızı Şalteri Vur, Kilidi Aç!", 4000);
+    }
+
+    function buildShowcaseGateCourse() {
+      addFloorWithCupHole(0, 0, 0, 4.4, 0.2, 15, 0, 6.0, 0.21);
+      addWall(-2.32, 0.29, 0, 0.26, 0.58, 15.5);
+      addWall(2.32, 0.29, 0, 0.26, 0.58, 15.5);
+      addWall(0, 0.18, -7.62, 4.38, 0.36, 0.26);
+      addWall(0, 0.29, 7.62, 4.38, 0.58, 0.26);
+      addCornerWedge(-2.19, 7.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(2.19, 7.49, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-2.19, -7.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.19, -7.49, -1, 1, 0.75, 0.18, 0.36);
+
+      // Ortada düz atışı tatlı bir şekilde kesen ahşap kiriş
+      addWoodLog(0, 0.10, 1.0, 2.4, 0.34, 0);
+
+      // Sağ tarafta mekanik hedef şalteri
+      addTargetSwitch(1.40, 0.10, -1.2, 0);
+
+      // Deliği koruyan kırmızı enerji kalkanı kubbesi
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0));
+    }
+
+    // Showcase 2: Draw-a-Bant
+    function loadShowcaseDraw() {
+      while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
+      colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
+      speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
+      icePatches = []; jumpRamps = []; floorMeshes = [];
+      targetSwitches = []; cupShieldGate = null; isCupLocked = false;
+      drawnWalls = []; isDrawingWall = false;
+      if (drawPreviewMesh) drawPreviewMesh.visible = false;
+      portalPairs = [];
+
+      holeCupPos.set(3.8, 0.1, 1.0);
+      ballPos.set(-2.2, 0.22, -5.5);
+      lastSafePos.copy(ballPos);
+      ballVel.set(0, 0, 0);
+      isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
+      sinkFallVel = 0; strokes = 0;
+      ballMesh.scale.set(1, 1, 1);
+      ballMesh.rotation.set(0, 0, 0);
+      ballMesh.visible = true;
+
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTabDraw = document.getElementById('tab-draw');
+      if (activeTabDraw) activeTabDraw.classList.add('active');
+      const tutHandDraw = document.getElementById('tutorial-hand');
+      if (tutHandDraw) tutHandDraw.style.display = 'none';
+      const drawPanelDraw = document.getElementById('draw-wall-panel');
+      if (drawPanelDraw) drawPanelDraw.style.display = 'flex';
+      updateHUD();
+      document.getElementById('gameover-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+
+      buildShowcaseDrawCourse();
+      buildCupAndFlag(holeCupPos);
+      scene.updateMatrixWorld(true);
+
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, -5.5) ?? 0.0;
+      lastGroundY = initGroundY;
+      ballPos.y = initGroundY + ballRadius;
+      lastSafePos.copy(ballPos);
+
+      camYaw = 0;
+      camPitch = 0.50;
+      setDrawTool('draw');
+      updateDrawUI();
+      showVoodooToast("✏️ Boşluğa Çizgi Çek, Kendi Duvarını Kur!", 4000);
+    }
+
+    function buildShowcaseDrawCourse() {
+      // L şeklinde parkur
+      addFloor(-2.2, 0, -3.2, 3.4, 0.2, 7.6);
+      addFloorWithCupHole(1.4, 0, 1.0, 7.2, 0.2, 3.4, 3.8, 1.0, 0.21);
+
+      // Duvarlar (Kritik: Kuzey-Batı köşesinde DUVAR YOKTUR, uçurumdur!)
+      addWall(-4.02, 0.29, -3.8, 0.26, 0.58, 6.8);
+      addWall(-2.2, 0.18, -7.12, 3.4, 0.36, 0.26);
+      addWall(-0.38, 0.29, -3.4, 0.26, 0.58, 6.0);
+      addWall(5.12, 0.29, 1.0, 0.26, 0.58, 3.6);
+      addWall(2.32, 0.29, -0.82, 5.8, 0.58, 0.26);
+      addWall(3.2, 0.29, 2.82, 4.0, 0.58, 0.26);
+
+      addCornerWedge(-3.89, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(4.99, 2.69, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(4.99, -0.69, -1, 1, 0.75, 0.29, 0.58);
+    }
+
+    // Showcase 3: Quantum Portal
+    function loadShowcasePortal() {
+      while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
+      colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
+      speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
+      icePatches = []; jumpRamps = []; floorMeshes = [];
+      targetSwitches = []; cupShieldGate = null; isCupLocked = false;
+      drawnWalls = []; isDrawingWall = false;
+      if (drawPreviewMesh) drawPreviewMesh.visible = false;
+      portalPairs = [];
+
+      holeCupPos.set(0, 0.1, 5.8);
+      ballPos.set(0, 0.22, -6.5);
+      lastSafePos.copy(ballPos);
+      ballVel.set(0, 0, 0);
+      isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
+      sinkFallVel = 0; strokes = 0;
+      ballMesh.scale.set(1, 1, 1);
+      ballMesh.rotation.set(0, 0, 0);
+      ballMesh.visible = true;
+
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTabPortal = document.getElementById('tab-portal');
+      if (activeTabPortal) activeTabPortal.classList.add('active');
+      const tutHandPortal = document.getElementById('tutorial-hand');
+      if (tutHandPortal) tutHandPortal.style.display = 'none';
+      const drawPanelPortal = document.getElementById('draw-wall-panel');
+      if (drawPanelPortal) drawPanelPortal.style.display = 'none';
+      updateHUD();
+      document.getElementById('gameover-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+
+      buildShowcasePortalCourse();
+      buildCupAndFlag(holeCupPos);
+      scene.updateMatrixWorld(true);
+
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, -6.5) ?? 0.0;
+      lastGroundY = initGroundY;
+      ballPos.y = initGroundY + ballRadius;
+      lastSafePos.copy(ballPos);
+
+      camYaw = 0;
+      camPitch = 0.44;
+      showVoodooToast("🌀 Mavi Portala Fırlat, Turuncudan Uç!", 4000);
+    }
+
+    function buildShowcasePortalCourse() {
+      // Ada 1 (Başlangıç Adası)
+      addFloor(0, 0, -4.5, 3.8, 0.2, 5.0);
+      addWall(-2.02, 0.29, -4.5, 0.26, 0.58, 5.2);
+      addWall(2.02, 0.29, -4.5, 0.26, 0.58, 5.2);
+      addWall(0, 0.18, -7.12, 3.78, 0.36, 0.26);
+      // Geçilmez yüksek kaya duvarı (Kuzeye bakan)
+      addWall(0, 0.45, -1.88, 3.78, 0.90, 0.36);
+
+      // Kanyon / Boşluk Uçurum (z = -1.7 ile z = 1.7 arası)
+
+      // Ada 2 (Delik Adası)
+      addFloorWithCupHole(0, 0, 4.5, 3.8, 0.2, 5.5, 0, 5.8, 0.21);
+      addWall(-2.02, 0.29, 4.5, 0.26, 0.58, 5.7);
+      addWall(2.02, 0.29, 4.5, 0.26, 0.58, 5.7);
+      addWall(0, 0.29, 7.37, 3.78, 0.58, 0.26);
+      // Geçilmez yüksek kaya duvarı (Güneye bakan)
+      addWall(0, 0.45, 1.63, 3.78, 0.90, 0.36);
+
+      addCornerWedge(-1.89, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -6.99, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.89, 7.24, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 7.24, -1, -1, 0.75, 0.29, 0.58);
+
+      // Kuantum Portallar
+      addPortalPair(
+        new THREE.Vector3(0, 0.50, -2.15),
+        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 0.50, 1.95),
+        new THREE.Vector3(0, 0, 1)
+      );
     }
 
     // Level Definitions (10 Bölüm - Kolaydan Zora Doğru Sıralı)
@@ -2121,6 +2928,14 @@
       icePatches = [];
       jumpRamps = [];
       floorMeshes = [];
+      targetSwitches = [];
+      cupShieldGate = null;
+      isCupLocked = false;
+      drawnWalls = [];
+      isDrawingWall = false;
+      drawStart3D = null;
+      if (drawPreviewMesh) drawPreviewMesh.visible = false;
+      portalPairs = [];
 
       const data = holes[idx];
       holeCupPos.copy(data.cup);
@@ -2133,6 +2948,11 @@
       isAirborne = false;
       sinkFallVel = 0;
       strokes = 0;
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTabClassic = document.getElementById('tab-classic');
+      if (activeTabClassic) activeTabClassic.classList.add('active');
+      const drawPanelClassic = document.getElementById('draw-wall-panel');
+      if (drawPanelClassic) drawPanelClassic.style.display = 'none';
       updateHUD();
 
       // Top görünümünü ve dönüş açısını sıfırla
@@ -3088,6 +3908,21 @@
       const tutHandEl = document.getElementById('tutorial-hand');
       if (tutHandEl) tutHandEl.style.display = 'none';
 
+      // 2. Mekanik: Duvar Çizme Modu Aktifse
+      if (currentVoodooMode === 'draw' && drawToolActive && drawnWalls.length < maxDrawnWalls) {
+        const p = getFloorIntersection(clientX, clientY);
+        if (p) {
+          interactionMode = 'DRAW_WALL';
+          isDrawingWall = true;
+          drawStart3D = p.clone();
+          if (!drawPreviewMesh) drawPreviewMesh = createDrawPreviewMesh();
+          drawPreviewMesh.position.set(p.x, 0.22, p.z);
+          drawPreviewMesh.scale.set(0.01, 1, 1);
+          drawPreviewMesh.visible = true;
+          return;
+        }
+      }
+
       // Sapan özelliği SADECE topun üzerine dokunulup çekildiğinde çalışır (65px geniş temas yarıçapı)
       if (distToBall <= 65) {
         interactionMode = 'SLINGSHOT';
@@ -3113,6 +3948,25 @@
       if (e.cancelable && interactionMode !== 'NONE') e.preventDefault();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
+        const curP = getFloorIntersection(clientX, clientY);
+        if (curP) {
+          const dx = curP.x - drawStart3D.x;
+          const dz = curP.z - drawStart3D.z;
+          const len = Math.hypot(dx, dz);
+          if (len > 0.05) {
+            const midX = (drawStart3D.x + curP.x) * 0.5;
+            const midZ = (drawStart3D.z + curP.z) * 0.5;
+            const angle = Math.atan2(dx, dz) + Math.PI * 0.5;
+            drawPreviewMesh.position.set(midX, 0.22, midZ);
+            drawPreviewMesh.rotation.y = angle;
+            drawPreviewMesh.scale.set(Math.max(len, 0.1), 1, 1);
+            drawPreviewMesh.visible = true;
+          }
+        }
+        return;
+      }
 
       if (interactionMode === 'ORBIT') {
         const dx = clientX - lastPointer.x;
@@ -3150,6 +4004,33 @@
     }
 
     function onPointerUp() {
+      if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
+        if (drawPreviewMesh) drawPreviewMesh.visible = false;
+        isDrawingWall = false;
+        interactionMode = 'NONE';
+        const curP = getFloorIntersection(lastPointer.x, lastPointer.y);
+        if (curP) {
+          const dx = curP.x - drawStart3D.x;
+          const dz = curP.z - drawStart3D.z;
+          const len = Math.hypot(dx, dz);
+          if (len >= 0.75) {
+            const midX = (drawStart3D.x + curP.x) * 0.5;
+            const midZ = (drawStart3D.z + curP.z) * 0.5;
+            const angle = Math.atan2(dx, dz) + Math.PI * 0.5;
+            const wallMesh = addWoodLog(midX, 0.10, midZ, Math.min(len, 3.8), 0.34, angle);
+            drawnWalls.push(wallMesh);
+            playWallSpawn();
+            triggerHaptic('medium');
+            showVoodooToast("🎯 Duvar Kuruldu! Şimdi Topu Sektir!");
+            setDrawTool('shoot');
+            updateDrawUI();
+          } else {
+            showVoodooToast("⚠️ Biraz daha uzun çizgi çek!");
+          }
+        }
+        return;
+      }
+
       if (interactionMode === 'SLINGSHOT') {
         hideAimVisuals();
         if (powerRatio >= 0.04 && !isMoving && !isInHole) {
@@ -3328,6 +4209,89 @@
           }
         }
 
+        // 4. Mekanik Şalter Hedefi (Target Switch)
+        for (let i = 0; i < targetSwitches.length; i++) {
+          const sw = targetSwitches[i];
+          const rx = curX - sw.x;
+          const rz = curZ - sw.z;
+          const b = rx * curDx + rz * curDz;
+          const c = rx * rx + rz * rz - (sw.radius + ballRadius) * (sw.radius + ballRadius);
+          if (c > 0 && b < 0) {
+            const discr = b * b - c;
+            if (discr >= 0) {
+              const t = -b - Math.sqrt(discr);
+              if (t > 0.05 && t < closestT) {
+                closestT = t;
+                const hx = curX + curDx * t - sw.x;
+                const hz = curZ + curDz * t - sw.z;
+                const hlen = Math.hypot(hx, hz) || 1;
+                hitNormX = hx / hlen;
+                hitNormZ = hz / hlen;
+                didHit = true;
+              }
+            }
+          }
+        }
+
+        // 5. Kilitli Delik Enerji Kalkanı (Cup Shield Gate)
+        if (isCupLocked && cupShieldGate && !cupShieldGate.shattering) {
+          const rx = curX - cupShieldGate.pos.x;
+          const rz = curZ - cupShieldGate.pos.z;
+          const b = rx * curDx + rz * curDz;
+          const c = rx * rx + rz * rz - (cupShieldGate.radius + ballRadius) * (cupShieldGate.radius + ballRadius);
+          if (c > 0 && b < 0) {
+            const discr = b * b - c;
+            if (discr >= 0) {
+              const t = -b - Math.sqrt(discr);
+              if (t > 0.05 && t < closestT) {
+                closestT = t;
+                const hx = curX + curDx * t - cupShieldGate.pos.x;
+                const hz = curZ + curDz * t - cupShieldGate.pos.z;
+                const hlen = Math.hypot(hx, hz) || 1;
+                hitNormX = hx / hlen;
+                hitNormZ = hz / hlen;
+                didHit = true;
+              }
+            }
+          }
+        }
+
+        // 6. Kuantum Portal Işın Kırılması & Boyut Atlama
+        let hitPortal = null;
+        for (let p = 0; p < portalPairs.length; p++) {
+          const pair = portalPairs[p];
+          const dot = curDx * pair.blue.norm.x + curDz * pair.blue.norm.z;
+          if (dot > 0.05) {
+            const toCenter = { x: pair.blue.pos.x - curX, z: pair.blue.pos.z - curZ };
+            const t = (toCenter.x * pair.blue.norm.x + toCenter.z * pair.blue.norm.z) / dot;
+            if (t > 0.05 && t < closestT) {
+              const px = curX + curDx * t;
+              const pz = curZ + curDz * t;
+              const dist = Math.hypot(px - pair.blue.pos.x, pz - pair.blue.pos.z);
+              if (dist <= pair.blue.radius) {
+                closestT = t;
+                hitPortal = pair;
+                didHit = true;
+              }
+            }
+          }
+        }
+
+        if (hitPortal) {
+          segments.push({
+            x1: curX, z1: curZ,
+            x2: curX + curDx * closestT, z2: curZ + curDz * closestT,
+            dist: closestT,
+            dirX: curDx, dirZ: curDz
+          });
+          curX = hitPortal.orange.pos.x + hitPortal.orange.norm.x * 0.40;
+          curZ = hitPortal.orange.pos.z + hitPortal.orange.norm.z * 0.40;
+          curDx = hitPortal.orange.norm.x;
+          curDz = hitPortal.orange.norm.z;
+          remDist -= closestT;
+          continue;
+        }
+
         if (didHit) {
           segments.push({
             x1: curX, z1: curZ,
@@ -3492,11 +4456,25 @@
     }
 
     function updateHUD() {
-      const h = holes[currentHole];
-      const holeNum = currentHole + 1;
-      document.getElementById('hole-num').innerText = holeNum;
-      document.getElementById('hole-name').innerText = h.name.replace(/^\d+\.\s*/, '');
-      document.getElementById('par-badge').innerText = `PAR ${h.par}`;
+      if (currentVoodooMode === 'classic') {
+        const h = holes[currentHole];
+        const holeNum = currentHole + 1;
+        document.getElementById('hole-num').innerText = holeNum;
+        document.getElementById('hole-name').innerText = h.name.replace(/^\d+\.\s*/, '');
+        document.getElementById('par-badge').innerText = `PAR ${h.par}`;
+      } else if (currentVoodooMode === 'gate') {
+        document.getElementById('hole-num').innerText = "1";
+        document.getElementById('hole-name').innerText = "Şalter & Kilit";
+        document.getElementById('par-badge').innerText = "PAR 2";
+      } else if (currentVoodooMode === 'draw') {
+        document.getElementById('hole-num').innerText = "2";
+        document.getElementById('hole-name').innerText = "Duvar Çiz";
+        document.getElementById('par-badge').innerText = "PAR 2";
+      } else if (currentVoodooMode === 'portal') {
+        document.getElementById('hole-num').innerText = "3";
+        document.getElementById('hole-name').innerText = "Portal & Warp";
+        document.getElementById('par-badge').innerText = "PAR 2";
+      }
       document.getElementById('stroke-badge').innerText = strokes;
     }
 
@@ -3704,6 +4682,7 @@
     // --- Yuvarlak Deliğe Giriş & Gerçekçi Kupa Fiziği ---
     function checkCupEntry(stepDt) {
       if (isInHole || isSinking) return true;
+      if (isCupLocked) return false;
 
       const curBallSpeed = Math.hypot(ballVel.x, ballVel.z);
       const toCup = holeCupPos.clone().sub(ballPos);
@@ -3750,6 +4729,19 @@
       rotatingBars.forEach(r => {
         r.pivot.rotation.y = (r.pivot.rotation.y + r.speed * dt) % (Math.PI * 2);
       });
+
+      // Portal girdap ve kalkan animasyonları
+      portalPairs.forEach(pair => {
+        pair.blue.group.userData.angle = (pair.blue.group.userData.angle || 0) + dt * 4.0;
+        pair.blue.group.userData.discMesh.rotation.z = pair.blue.group.userData.angle;
+        pair.orange.group.userData.angle = (pair.orange.group.userData.angle || 0) - dt * 4.0;
+        pair.orange.group.userData.discMesh.rotation.z = pair.orange.group.userData.angle;
+      });
+
+      if (cupShieldGate && !cupShieldGate.shattering) {
+        cupShieldGate.domeMat.opacity = Math.sin(gameElapsedTime * 5.0) * 0.14 + 0.54;
+        cupShieldGate.lockGroup.rotation.y = gameElapsedTime * 1.5;
+      }
 
       // Top dururken dönen tahta topa çarparsa topu hareketlendir
       if (!isSinking && !isInHole) {
@@ -3956,6 +4948,86 @@
             if (ballVel.length() < 12.0) ballVel.setLength(12.0);
             ballPos.addScaledVector(normal, 0.08);
             playBumper();
+          }
+        });
+
+        // Mekanik Şalter Çarpışmaları (Hedef tetikleyici)
+        targetSwitches.forEach(sw => {
+          if (!sw.isTriggered) {
+            const dx = ballPos.x - sw.x;
+            const dz = ballPos.z - sw.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist < sw.radius + ballRadius) {
+              const nx = dx / (dist || 1);
+              const nz = dz / (dist || 1);
+              const dot = ballVel.x * nx + ballVel.z * nz;
+              if (dot < 0) {
+                ballVel.x = (ballVel.x - 1.9 * dot * nx) * 0.95;
+                ballVel.z = (ballVel.z - 1.9 * dot * nz) * 0.95;
+                if (Math.hypot(ballVel.x, ballVel.z) < 5.0) {
+                  const s = 5.0 / (Math.hypot(ballVel.x, ballVel.z) || 1);
+                  ballVel.x *= s; ballVel.z *= s;
+                }
+              }
+              ballPos.x = sw.x + nx * (sw.radius + ballRadius + 0.02);
+              ballPos.z = sw.z + nz * (sw.radius + ballRadius + 0.02);
+
+              sw.isTriggered = true;
+              sw.rimMat.color.setHex(0x00ff88);
+              sw.rimMat.emissive.setHex(0x00cc66);
+              sw.btnMat.color.setHex(0x00e676);
+              sw.btnMat.emissive.setHex(0x00b34d);
+              sw.btnMesh.position.y = 0.06;
+
+              playSwitchTrigger();
+              triggerHaptic('medium');
+              unlockCupGate();
+            }
+          }
+        });
+
+        // Delik Enerji Kalkanı Çarpışması
+        if (isCupLocked && cupShieldGate && !cupShieldGate.shattering) {
+          const dx = ballPos.x - cupShieldGate.pos.x;
+          const dz = ballPos.z - cupShieldGate.pos.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < cupShieldGate.radius + ballRadius) {
+            const nx = dx / (dist || 1);
+            const nz = dz / (dist || 1);
+            const dot = ballVel.x * nx + ballVel.z * nz;
+            if (dot < 0) {
+              ballVel.x = (ballVel.x - 1.85 * dot * nx) * 0.88;
+              ballVel.z = (ballVel.z - 1.85 * dot * nz) * 0.88;
+            }
+            ballPos.x = cupShieldGate.pos.x + nx * (cupShieldGate.radius + ballRadius + 0.02);
+            ballPos.z = cupShieldGate.pos.z + nz * (cupShieldGate.radius + ballRadius + 0.02);
+            playShieldDeflect();
+            showVoodooToast("🔒 Önce Kırmızı Şalteri Vur!");
+          }
+        }
+
+        // Kuantum Portallar (Işınlanma Geçişi)
+        portalPairs.forEach(pair => {
+          if (pair.cooldown > 0) {
+            pair.cooldown -= subDt;
+            return;
+          }
+          const bDist = Math.hypot(ballPos.x - pair.blue.pos.x, ballPos.z - pair.blue.pos.z);
+          if (bDist < pair.blue.radius + ballRadius && Math.abs(ballPos.y - pair.blue.pos.y) < 0.65) {
+            pair.cooldown = 0.85;
+            playPortalWarp();
+            triggerHaptic('hole');
+            showVoodooToast("🌀 PORTALDAN GEÇTİ!", 2600);
+
+            ballPos.x = pair.orange.pos.x + pair.orange.norm.x * 0.45;
+            ballPos.y = pair.orange.pos.y - 0.20 + ballRadius;
+            ballPos.z = pair.orange.pos.z + pair.orange.norm.z * 0.45;
+
+            const spd = Math.max(ballVel.length() * 1.08, 5.2);
+            ballVel.x = pair.orange.norm.x * spd;
+            ballVel.y = 0;
+            ballVel.z = pair.orange.norm.z * spd;
+            lastSafePos.copy(ballPos);
           }
         });
 
@@ -4185,15 +5257,35 @@
         stars.innerText = "⭐☆☆";
       }
 
-      score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})`;
-      document.getElementById('next-btn').innerText = (currentHole === holes.length - 1) ? "ŞAMPİYONSUN! BAŞTAN OYNA 🏆" : "SONRAKİ DELİK ➡️";
+      if (currentVoodooMode === 'classic') {
+        const par = holes[currentHole].par;
+        score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})`;
+        document.getElementById('next-btn').innerText = (currentHole === holes.length - 1) ? "ŞAMPİYONSUN! BAŞTAN OYNA 🏆" : "SONRAKİ DELİK ➡️";
+      } else if (currentVoodooMode === 'gate') {
+        score.innerText = `${strokes} Vuruşta Tamamlandı! Şalter & Kilit Mekaniği Başarılı!`;
+        document.getElementById('next-btn').innerText = "SONRAKİ MEKANİK: DUVAR ÇİZ ✏️";
+      } else if (currentVoodooMode === 'draw') {
+        score.innerText = `${strokes} Vuruşta Tamamlandı! Kendi Duvarını Çizdin & Başardın!`;
+        document.getElementById('next-btn').innerText = "SONRAKİ MEKANİK: PORTAL 🌀";
+      } else if (currentVoodooMode === 'portal') {
+        score.innerText = `${strokes} Vuruşta Tamamlandı! Kuantum Sıçraması Başarılı!`;
+        document.getElementById('next-btn').innerText = "KLASİK MODA DÖN ⛳";
+      }
       modal.style.display = 'flex';
     }
 
     function nextHole() {
       document.getElementById('modal').style.display = 'none';
-      currentHole = (currentHole + 1) % holes.length;
-      buildCourse(currentHole);
+      if (currentVoodooMode === 'classic') {
+        currentHole = (currentHole + 1) % holes.length;
+        buildCourse(currentHole);
+      } else if (currentVoodooMode === 'gate') {
+        switchVoodooMode('draw');
+      } else if (currentVoodooMode === 'draw') {
+        switchVoodooMode('portal');
+      } else if (currentVoodooMode === 'portal') {
+        switchVoodooMode('classic');
+      }
     }
 
     // --- Camera Smooth Tracking ---
@@ -4312,7 +5404,7 @@
       // Voodoo dinamik öğretici el takip fonksiyonu
       const tutHandEl = document.getElementById('tutorial-hand');
       if (tutHandEl) {
-        if (currentHole === 0 && strokes === 0 && !isMoving && interactionMode === 'NONE' && !tutorialDismissed) {
+        if (currentVoodooMode === 'classic' && currentHole === 0 && strokes === 0 && !isMoving && interactionMode === 'NONE' && !tutorialDismissed) {
           const ballSc = getBallScreenPos();
           if (ballSc.inFront) {
             tutHandEl.style.display = 'block';
@@ -4336,11 +5428,76 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Start Game (Supports ?hole=0..9)
-    const startHoleIdx = urlParams.has('hole') ? parseInt(urlParams.get('hole'), 10) : 0;
-    currentHole = startHoleIdx;
-    buildCourse(currentHole);
+    // Start Game (Supports ?hole=0..9 or ?mode=gate|draw|portal|classic)
+    const urlMode = urlParams.get('mode');
+    if (urlMode && ['gate', 'draw', 'portal'].includes(urlMode)) {
+      switchVoodooMode(urlMode);
+    } else {
+      const startHoleIdx = urlParams.has('hole') ? parseInt(urlParams.get('hole'), 10) : 0;
+      currentHole = startHoleIdx;
+      buildCourse(currentHole);
+    }
     animate();
+
+    // Automated In-Browser Verification for Voodoo Innovation Modes (?test=1)
+    if (urlParams.has('test')) {
+      window.testResults = [];
+      function runVoodooTests() {
+        try {
+          // Test 1: Gate & Switch
+          switchVoodooMode('gate');
+          if (targetSwitches.length !== 1) throw new Error("Gate mode switch missing");
+          if (!isCupLocked) throw new Error("Cup should be locked initially");
+          const sw = targetSwitches[0];
+          ballPos.set(sw.x, 0.22, sw.z);
+          ballVel.set(0, 0, 1); isMoving = true;
+          updatePhysics(0.016);
+          if (!sw.isTriggered) throw new Error("Switch failed to trigger on ball hit");
+          if (isCupLocked) throw new Error("Cup should be unlocked after switch hit");
+          window.testResults.push("TEST 1 (Gate & Switch): PASSED");
+
+          // Test 2: Draw-a-Bant
+          switchVoodooMode('draw');
+          if (document.getElementById('draw-wall-panel').style.display !== 'flex') throw new Error("Draw panel not visible");
+          setDrawTool('draw');
+          const wallMesh = addWoodLog(0, 0.10, 0, 2.5, 0.34, 0.78);
+          drawnWalls.push(wallMesh);
+          updateDrawUI();
+          if (drawnWalls.length !== 1) throw new Error("Drawn wall not added");
+          if (!woodLogs.some(l => l.mesh === wallMesh)) throw new Error("Drawn wall not in woodLogs");
+          window.testResults.push("TEST 2 (Draw-a-Bant): PASSED");
+
+          // Test 3: Quantum Portal
+          switchVoodooMode('portal');
+          if (portalPairs.length !== 1) throw new Error("Portal pair missing");
+          const pair = portalPairs[0];
+          ballPos.copy(pair.blue.pos);
+          ballVel.set(0, 0, 6.0); isMoving = true;
+          updatePhysics(0.016);
+          const distToOrange = Math.hypot(ballPos.x - (pair.orange.pos.x + pair.orange.norm.x * 0.45), ballPos.z - (pair.orange.pos.z + pair.orange.norm.z * 0.45));
+          if (distToOrange > 0.3) throw new Error("Ball did not teleport to Orange Portal");
+          window.testResults.push("TEST 3 (Quantum Portal Warp): PASSED");
+
+          // Test 4: Classic Mode
+          switchVoodooMode('classic');
+          if (holes.length !== 10) throw new Error("Holes count not 10");
+          if (currentVoodooMode !== 'classic') throw new Error("Classic mode not set");
+          window.testResults.push("TEST 4 (Classic Mode 1-10): PASSED");
+
+          const div = document.createElement('div');
+          div.id = 'test-summary';
+          div.innerText = "SUCCESS: " + window.testResults.join(" | ");
+          document.body.appendChild(div);
+        } catch (err) {
+          const div = document.createElement('div');
+          div.id = 'test-summary';
+          div.innerText = "FAIL: " + err.message;
+          document.body.appendChild(div);
+        }
+      }
+      setTimeout(runVoodooTests, 200);
+    }
+
   </script>
 </body>
 </html>
