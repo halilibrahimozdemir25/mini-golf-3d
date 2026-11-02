@@ -2304,6 +2304,7 @@
     let drawnWalls = [];
     let isDrawingWall = false;
     let drawStart3D = null;
+    let drawEnd3D = null;
     let drawPreviewMesh = null;
     let drawToolActive = false;
     const maxDrawnWalls = 1;
@@ -2476,7 +2477,7 @@
     // --- Option 2: Draw-a-Bant Implementation ---
     const drawRaycaster = new THREE.Raycaster();
     const drawMouseVec = new THREE.Vector2();
-    const drawPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.20);
+    const drawPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.10);
 
     function getFloorIntersection(screenX, screenY) {
       drawMouseVec.x = (screenX / window.innerWidth) * 2 - 1;
@@ -2504,7 +2505,14 @@
     }
 
     function setDrawTool(tool) {
-      drawToolActive = (tool === 'draw');
+      if (tool === 'draw') {
+        if (drawnWalls.length >= maxDrawnWalls) {
+          clearDrawnWalls();
+        }
+        drawToolActive = true;
+      } else {
+        drawToolActive = false;
+      }
       const btnDraw = document.getElementById('draw-btn-draw');
       const btnShoot = document.getElementById('draw-btn-shoot');
       if (btnDraw && btnShoot) {
@@ -3895,6 +3903,9 @@
     function onPointerDown(e) {
       initAudio();
       if (isMoving || isInHole) return;
+      if (e.target && e.target.closest && e.target.closest('#hud, #voodoo-mode-bar, #draw-wall-panel, #modal, #gameover-modal')) {
+        return;
+      }
 
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -3915,8 +3926,10 @@
           interactionMode = 'DRAW_WALL';
           isDrawingWall = true;
           drawStart3D = p.clone();
+          drawEnd3D = p.clone();
           if (!drawPreviewMesh) drawPreviewMesh = createDrawPreviewMesh();
-          drawPreviewMesh.position.set(p.x, 0.22, p.z);
+          drawPreviewMesh.position.set(p.x, 0.25, p.z);
+          drawPreviewMesh.rotation.set(0, 0, 0);
           drawPreviewMesh.scale.set(0.01, 1, 1);
           drawPreviewMesh.visible = true;
           return;
@@ -3948,18 +3961,20 @@
       if (e.cancelable && interactionMode !== 'NONE') e.preventDefault();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      lastPointer = { x: clientX, y: clientY };
 
       if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
         const curP = getFloorIntersection(clientX, clientY);
         if (curP) {
-          const dx = curP.x - drawStart3D.x;
-          const dz = curP.z - drawStart3D.z;
+          drawEnd3D = curP.clone();
+          const dx = drawEnd3D.x - drawStart3D.x;
+          const dz = drawEnd3D.z - drawStart3D.z;
           const len = Math.hypot(dx, dz);
           if (len > 0.05) {
-            const midX = (drawStart3D.x + curP.x) * 0.5;
-            const midZ = (drawStart3D.z + curP.z) * 0.5;
-            const angle = Math.atan2(dx, dz) + Math.PI * 0.5;
-            drawPreviewMesh.position.set(midX, 0.22, midZ);
+            const midX = (drawStart3D.x + drawEnd3D.x) * 0.5;
+            const midZ = (drawStart3D.z + drawEnd3D.z) * 0.5;
+            const angle = Math.atan2(-dz, dx);
+            drawPreviewMesh.position.set(midX, 0.25, midZ);
             drawPreviewMesh.rotation.y = angle;
             drawPreviewMesh.scale.set(Math.max(len, 0.1), 1, 1);
             drawPreviewMesh.visible = true;
@@ -3971,7 +3986,6 @@
       if (interactionMode === 'ORBIT') {
         const dx = clientX - lastPointer.x;
         const dy = clientY - lastPointer.y;
-        lastPointer = { x: clientX, y: clientY };
 
         // Ekran kaydırması ile kamera açısını top etrafında pürüzsüz döndür
         camYaw -= dx * 0.0055;
@@ -4003,28 +4017,38 @@
       }
     }
 
-    function onPointerUp() {
+    function onPointerUp(e) {
       if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
         if (drawPreviewMesh) drawPreviewMesh.visible = false;
         isDrawingWall = false;
         interactionMode = 'NONE';
-        const curP = getFloorIntersection(lastPointer.x, lastPointer.y);
-        if (curP) {
-          const dx = curP.x - drawStart3D.x;
-          const dz = curP.z - drawStart3D.z;
+
+        if (e && e.changedTouches && e.changedTouches.length > 0) {
+          const t = e.changedTouches[0];
+          const curP = getFloorIntersection(t.clientX, t.clientY);
+          if (curP) drawEnd3D = curP.clone();
+        } else if (lastPointer) {
+          const curP = getFloorIntersection(lastPointer.x, lastPointer.y);
+          if (curP) drawEnd3D = curP.clone();
+        }
+
+        if (drawEnd3D && drawStart3D) {
+          const dx = drawEnd3D.x - drawStart3D.x;
+          const dz = drawEnd3D.z - drawStart3D.z;
           const len = Math.hypot(dx, dz);
-          if (len >= 0.75) {
-            const midX = (drawStart3D.x + curP.x) * 0.5;
-            const midZ = (drawStart3D.z + curP.z) * 0.5;
-            const angle = Math.atan2(dx, dz) + Math.PI * 0.5;
-            const wallMesh = addWoodLog(midX, 0.10, midZ, Math.min(len, 3.8), 0.34, angle);
+          if (len >= 0.40) {
+            const midX = (drawStart3D.x + drawEnd3D.x) * 0.5;
+            const midZ = (drawStart3D.z + drawEnd3D.z) * 0.5;
+            const angle = Math.atan2(-dz, dx);
+            const wallLen = Math.max(0.6, Math.min(len, 4.5));
+            const wallMesh = addWoodLog(midX, 0.10, midZ, wallLen, 0.34, angle);
             drawnWalls.push(wallMesh);
             playWallSpawn();
             triggerHaptic('medium');
             showVoodooToast("🎯 Duvar Kuruldu! Şimdi Topu Sektir!");
             setDrawTool('shoot');
             updateDrawUI();
-          } else {
+          } else if (len > 0.08) {
             showVoodooToast("⚠️ Biraz daha uzun çizgi çek!");
           }
         }
@@ -4043,11 +4067,11 @@
 
     window.addEventListener('mousedown', onPointerDown);
     window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('mouseup', (e) => onPointerUp(e));
 
     window.addEventListener('touchstart', onPointerDown, { passive: true });
     window.addEventListener('touchmove', onPointerMove, { passive: false });
-    window.addEventListener('touchend', onPointerUp, { passive: true });
+    window.addEventListener('touchend', (e) => onPointerUp(e), { passive: true });
 
     function getAimColor(t) {
       const clampedT = Math.max(0, Math.min(1, t));
@@ -5438,6 +5462,7 @@
       buildCourse(currentHole);
     }
     animate();
+
 
     // Automated In-Browser Verification for Voodoo Innovation Modes (?test=1)
     if (urlParams.has('test')) {
