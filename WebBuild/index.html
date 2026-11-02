@@ -40,12 +40,13 @@
       position: absolute;
       top: 0;
       left: 0;
-      right: 0;
+      width: 100%;
+      box-sizing: border-box;
       padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
-      padding-bottom: 10px;
-      padding-left: 14px;
-      padding-right: 14px;
-      background: linear-gradient(180deg, rgba(6, 18, 10, 0.92) 0%, rgba(6, 18, 10, 0.78) 70%, rgba(6, 18, 10, 0.0) 100%);
+      padding-bottom: 8px;
+      padding-left: 12px;
+      padding-right: 12px;
+      background: linear-gradient(180deg, rgba(6, 18, 10, 0.94) 0%, rgba(6, 18, 10, 0.78) 70%, rgba(6, 18, 10, 0.0) 100%);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       display: flex;
@@ -55,77 +56,101 @@
       z-index: 10;
     }
     #hud::after {
-      content: '';
+      content: "";
       position: absolute;
       bottom: 0;
-      left: 16px;
-      right: 16px;
+      left: 12px;
+      right: 12px;
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(255, 214, 50, 0.35), rgba(77, 243, 115, 0.35), transparent);
     }
     .hud-left {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex: 1;
+      gap: 6px;
     }
     #hole-num {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       background: linear-gradient(135deg, #1fc953, #0d8a2e);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 900;
-      font-size: 15px;
+      font-size: 14px;
       color: #fff;
       box-shadow: 0 2px 8px rgba(31, 201, 83, 0.4);
       flex-shrink: 0;
     }
     #hole-name {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       color: #e8f5ec;
-      max-width: 140px;
+      max-width: 90px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
     .hud-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       align-items: center;
-      gap: 6px;
+      pointer-events: none;
     }
     #par-badge {
       background: rgba(255, 214, 50, 0.15);
       border: 1px solid rgba(255, 214, 50, 0.35);
       border-radius: 12px;
-      padding: 3px 10px;
+      padding: 3px 8px;
       font-size: 11px;
       font-weight: 700;
       color: #ffd632;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
     }
     .hud-right {
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-shrink: 0;
     }
     #stroke-badge {
       background: linear-gradient(135deg, rgba(77, 243, 115, 0.2), rgba(77, 243, 115, 0.08));
       border: 1px solid rgba(77, 243, 115, 0.4);
-      border-radius: 14px;
-      padding: 4px 12px;
-      font-size: 13px;
+      border-radius: 12px;
+      padding: 3px 8px;
+      font-size: 12px;
       font-weight: 800;
       color: #4df373;
       letter-spacing: 0.3px;
     }
     .stroke-icon {
-      font-size: 14px;
+      font-size: 13px;
+    }
+    #restart-btn {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: transform 0.12s, background 0.12s;
+      flex-shrink: 0;
+      padding: 0;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    #restart-btn:active {
+      transform: scale(0.88);
+      background: rgba(255, 255, 255, 0.28);
     }
     /* Slingshot Power Badge */
     #power-badge {
@@ -145,8 +170,67 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
       z-index: 10;
     }
-    /* Instruction Hint */
+    /* Restart Button */
+    #restart-btn {
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      margin-left: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: transform 0.12s, background 0.12s;
+      flex-shrink: 0;
+      padding: 0;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    #restart-btn:active {
+      transform: scale(0.88);
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    /* Voodoo Style Tutorial Hand */
+    #tutorial-hand {
+      position: absolute;
+      pointer-events: none;
+      z-index: 50;
+      width: 68px;
+      height: 68px;
+      transform: translate(-50%, -50%);
+      display: none;
+      animation: tutorialDrag 2.0s ease-in-out infinite;
+    }
+    @keyframes tutorialDrag {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+      15% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      35% { transform: translate(-50%, -50%) scale(0.92); opacity: 1; }
+      65% { transform: translate(-50%, calc(-50% + 72px)) scale(0.86); opacity: 1; }
+      80% { transform: translate(-50%, calc(-50% + 72px)) scale(1.04); opacity: 0.8; }
+      95% { transform: translate(-50%, calc(-50% + 72px)) scale(1); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    /* Confetti Canvas */
+    #confetti-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 150;
+    }
+
+    /* Instruction Hint (Hidden in Voodoo style - replaced by animated tutorial hand) */
     #hint {
+      display: none !important;
       position: absolute;
       bottom: 24px;
       left: 50%;
@@ -230,7 +314,7 @@
   <div id="hud">
     <div class="hud-left">
       <div id="hole-num">1</div>
-      <div id="hole-name">Çam Vadisi</div>
+      <div id="hole-name">İlk Vuruş</div>
     </div>
     <div class="hud-center">
       <div id="par-badge">PAR 2</div>
@@ -238,10 +322,20 @@
     <div class="hud-right">
       <span class="stroke-icon">🏌️</span>
       <div id="stroke-badge">0</div>
+      <button id="restart-btn" onclick="retryHole()" title="Yeniden Başlat">🔄</button>
     </div>
   </div>
 
   <div id="power-badge" style="display:none !important;"></div>
+
+  <div id="tutorial-hand">
+    <svg width="68" height="68" viewBox="0 0 64 64" fill="none">
+      <circle cx="32" cy="18" r="14" fill="rgba(77,243,115,0.28)" />
+      <circle cx="32" cy="18" r="6" fill="#4df373" />
+      <path d="M32 20 C28 20 25 24 25 30 L25 40 C25 46 29 50 34 50 L38 50 C43 50 47 46 47 40 L47 35 C47 32 45 30 42 30 C40 30 39 31 38 32 L38 25 C38 22 35 20 32 20 Z" fill="white" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <canvas id="confetti-canvas"></canvas>
 
   <div id="hint">🎯 Vuruş: Topa dokun ve geri çek | 🔄 Kamera: Boşlukta kaydır</div>
   <div id="toast" style="display:none; position:fixed; top:75px; left:50%; transform:translateX(-50%); background:rgba(15,23,42,0.92); color:#38bdf8; font-family:-apple-system,sans-serif; font-weight:800; font-size:15px; padding:10px 22px; border-radius:24px; border:1px solid rgba(56,189,248,0.4); box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:9999; pointer-events:none; backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); transition:opacity 0.3s; opacity:0;">Piste Geri Döndü 🔄</div>
@@ -1657,7 +1751,7 @@
     scene.add(aim3DGroup);
 
     // 1. Dinamik Hız Baremi Seviye Çubukları (Aerodinamik kavisli pod / barem blokları)
-    const maxBars = 10;
+    const maxBars = 16;
     const aimBars = [];
     const barGeo = new THREE.BoxGeometry(0.24, 0.018, 0.14);
 
@@ -1829,58 +1923,57 @@
     // Level Definitions (10 Bölüm - Kolaydan Zora Doğru Sıralı)
     const holes = [
       {
-        name: "1. Çam Vadisi",
+        name: "1. İlk Vuruş",
         par: 2,
         spawn: new THREE.Vector3(0, 0.22, -6),
+        cup: new THREE.Vector3(0, 0.1, 5.5)
+      },
+      {
+        name: "2. Açılı Bant Vuruşu",
+        par: 2,
+        spawn: new THREE.Vector3(0, 0.22, -6),
+        cup: new THREE.Vector3(0, 0.1, 5.5)
+      },
+      {
+        name: "3. Hızlı Buz Tüneli",
+        par: 2,
+        spawn: new THREE.Vector3(0, 0.22, -6.5),
         cup: new THREE.Vector3(0, 0.1, 6.5)
       },
       {
-        name: "2. Buz Pisti & İlk Viraj",
+        name: "4. Pinball Tamponu",
         par: 2,
-        spawn: new THREE.Vector3(0, 0.22, -6),
+        spawn: new THREE.Vector3(0, 0.22, -6.5),
         cup: new THREE.Vector3(0, 0.1, 6.5)
       },
       {
-        name: "3. Değirmen & Kum Tuzağı",
+        name: "5. Çift Bant L-Virajı",
         par: 3,
         spawn: new THREE.Vector3(-3.5, 0.22, -6),
         cup: new THREE.Vector3(3.5, 0.1, 7.5),
         initYaw: 0
       },
       {
-        name: "4. Çift Buz Geçidi",
+        name: "6. Kum Tuzağı & Akıllı Rota",
         par: 3,
         spawn: new THREE.Vector3(0, 0.22, -6.5),
-        cup: new THREE.Vector3(0, 0.1, 7.0)
+        cup: new THREE.Vector3(0, 0.1, 6.5)
       },
       {
-        name: "5. Zirve & Pinball Tamponları",
+        name: "7. Zirve Tırmanışı",
         par: 3,
         spawn: new THREE.Vector3(0, 0.22, -6),
         cup: new THREE.Vector3(0, 0.65, 8.5)
       },
       {
-        name: "6. Zigzag Virajlar",
+        name: "8. Değirmen Zamanlaması",
         par: 3,
-        spawn: new THREE.Vector3(-3.5, 0.22, -6.0),
-        cup: new THREE.Vector3(3.5, 0.1, 6.0),
-        initYaw: 0
-      },
-      {
-        name: "7. Buzlu Değirmen Labirenti",
-        par: 4,
         spawn: new THREE.Vector3(-3.5, 0.22, -6.5),
         cup: new THREE.Vector3(3.5, 0.1, 7.5),
         initYaw: 0
       },
       {
-        name: "8. Buzlu Zirve Tırmanışı",
-        par: 4,
-        spawn: new THREE.Vector3(0, 0.22, -6.5),
-        cup: new THREE.Vector3(0, 0.65, 8.5)
-      },
-      {
-        name: "9. Kanyon Kıvrımları & Çifte Yol",
+        name: "9. Çifte Kanyon",
         par: 4,
         spawn: new THREE.Vector3(0, 0.22, -6.5),
         cup: new THREE.Vector3(0, 0.1, 9.5),
@@ -1888,7 +1981,7 @@
       },
       {
         name: "10. Şampiyonlar Zirvesi",
-        par: 5,
+        par: 4,
         spawn: new THREE.Vector3(-4.0, 0.22, -7.0),
         cup: new THREE.Vector3(4.0, 0.65, 9.5),
         initYaw: 0
@@ -1949,6 +2042,18 @@
 
       // Ensure all world matrices are calculated so raycasts are 100% accurate
       scene.updateMatrixWorld(true);
+
+      // Bölüm 1'de Voodoo animasyonlu gösterge eli tetiklenir
+      const tutHand = document.getElementById('tutorial-hand');
+      if (tutHand) {
+        if (idx === 0) {
+          tutHand.style.display = 'block';
+          tutHand.style.left = '50%';
+          tutHand.style.top = '65%';
+        } else {
+          tutHand.style.display = 'none';
+        }
+      }
 
       // Snap ball perfectly onto the top surface of the green
       const initGroundY = getGroundHeight(ballPos.x, ballPos.z, data.spawn.y - ballRadius) ?? (data.spawn.y - ballRadius);
@@ -2529,60 +2634,18 @@
       // Golf Battle Tarzı Köşeli Ahşap Kalas / Kiriş Engelleri (Square Timber Beams)
       // TÜM KALASLAR DUVARLARA MATEMATİKSEL OLARAK TAM YAPIŞIKTIR (SIFIR BOŞLUK)
       // Format: [x, y, z, length, width, angle]
+      // Voodoo standardı: Her bölüm temiz, odaklı ve okunabilir!
       const holeWoodLogs = [
-        // Hole 1: 1. Çam Vadisi (S virajı & slalom geçişi - Duvara tam yapışık)
-        [
-          [-1.14, 0.1, -1.5, 1.3, 0.34, 0],
-          [1.14, 0.1, 1.0, 1.3, 0.34, 0]
-        ],
-        // Hole 2: 2. Buz Pisti (Açılı yönlendirici bant kalasları - Duvara tam yapışık)
-        [
-          [1.19, 0.1, -3.2, 1.2, 0.34, 0],
-          [-1.19, 0.1, 1.8, 1.2, 0.34, 0]
-        ],
-        // Hole 3: 3. Değirmen & Kum Tuzağı (L Dönüş duvar sekme kalasları - Duvara tam yapışık)
-        [
-          [-4.54, 0.1, -1.5, 1.1, 0.34, 0],
-          [4.54, 0.1, 5.2, 1.1, 0.34, 0]
-        ],
-        // Hole 4: 4. Çift Buz Geçidi (Buz arası şık şikan kalasları - Duvara tam yapışık)
-        [
-          [-1.24, 0.1, -0.2, 1.3, 0.34, 0],
-          [1.24, 0.1, 4.8, 1.3, 0.34, 0]
-        ],
-        // Hole 5: 5. Zirve & Pinball Tamponları (Kalkış şikanı ve zirve bankı - Duvara tam yapışık)
-        [
-          [-1.29, 0.1, -3.2, 1.2, 0.34, 0],
-          [1.69, 0.65, 7.0, 1.2, 0.34, 0]
-        ],
-        // Hole 6: 6. Zigzag Virajlar (Dönüş koridorları şikan kalasları - Duvara tam yapışık)
-        [
-          [-4.49, 0.1, -1.2, 1.2, 0.34, 0],
-          [4.49, 0.1, 2.0, 1.2, 0.34, 0]
-        ],
-        // Hole 7: 7. Buzlu Değirmen Labirenti (Duvara tam yapışık)
-        [
-          [-4.49, 0.1, -2.8, 1.2, 0.34, 0],
-          [4.49, 0.1, 3.8, 1.2, 0.34, 0]
-        ],
-        // Hole 8: 8. Buzlu Zirve Tırmanışı (Duvara tam yapışık)
-        [
-          [-1.29, 0.1, -2.2, 1.2, 0.34, 0],
-          [1.69, 0.65, 7.2, 1.2, 0.34, 0]
-        ],
-        // Hole 9: 9. Kanyon Kıvrımları & Çifte Yol (Kalkış şikanı & Arena bank kalasları - Duvara tam yapışık)
-        [
-          [-1.50, 0.1, -4.2, 1.2, 0.34, 0],
-          [1.50, 0.1, -3.2, 1.2, 0.34, 0],
-          [-2.40, 0.1, 6.2, 1.4, 0.34, 0],
-          [2.40, 0.1, 6.2, 1.4, 0.34, 0]
-        ],
-        // Hole 10: 10. Şampiyonlar Zirvesi (Duvara tam yapışık)
-        [
-          [-5.19, 0.1, -2.8, 1.2, 0.34, 0],
-          [2.01, 0.65, 8.5, 1.2, 0.34, 0],
-          [5.99, 0.65, 8.5, 1.2, 0.34, 0]
-        ]
+        [], // Hole 1: İlk Vuruş (Temiz, engelsiz akış)
+        [], // Hole 2: Açılı Bant Vuruşu (buildHole2 içindeki merkezi engel kullanılır)
+        [], // Hole 3: Hızlı Buz Tüneli
+        [], // Hole 4: Pinball Tamponu
+        [], // Hole 5: Çift Bant L-Virajı
+        [], // Hole 6: Kum Tuzağı & Akıllı Rota
+        [], // Hole 7: Zirve Tırmanışı
+        [], // Hole 8: Değirmen Zamanlaması
+        [], // Hole 9: Çifte Kanyon
+        []  // Hole 10: Şampiyonlar Zirvesi
       ];
 
       const logs = holeWoodLogs[idx] || [];
@@ -2591,54 +2654,91 @@
       });
     }
 
-    // --- Hole 1 (1. Çam Vadisi - Kolay Başlangıç) ---
+    // --- Hole 1 (1. İlk Vuruş - Doğrudan Delik & Öğretici) ---
     function buildHole1() {
-      addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
-      addWall(-1.92, 0.29, 0, 0.26, 0.58, 16.5);
-      addWall(1.92, 0.29, 0, 0.26, 0.58, 16.5);
-      addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
-      addWall(0, 0.29, 8.12, 3.58, 0.58, 0.26);
-      addCornerWedge(-1.79, 7.99, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(1.79, 7.99, -1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(-1.79, -7.99, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(1.79, -7.99, -1, 1, 0.75, 0.18, 0.36);
-      addSand(1.0, 0.1, 2.5, 1.3, 3.0);
-      addBumper(-1.0, 0.1, 2.5, 0.4);
+      addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 14, 0, 5.5, 0.21);
+      addWall(-1.92, 0.29, 0, 0.26, 0.58, 14.5);
+      addWall(1.92, 0.29, 0, 0.26, 0.58, 14.5);
+      addWall(0, 0.18, -7.12, 3.58, 0.36, 0.26);
+      addWall(0, 0.29, 7.12, 3.58, 0.58, 0.26);
+      addCornerWedge(-1.79, 6.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.79, 6.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.79, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.79, -6.99, -1, 1, 0.75, 0.18, 0.36);
     }
 
-    // --- Hole 2 (2. Buz Pisti & İlk Viraj - Buz Mekaniği Tanıtımı) ---
+    // --- Hole 2 (2. Açılı Bant Vuruşu - 45° Sekme Trickshot Mekaniği) ---
     function buildHole2() {
-      addFloorWithCupHole(0, 0, 0, 3.6, 0.2, 16, 0, 6.5, 0.21);
-      addWall(-1.92, 0.29, 0, 0.26, 0.58, 16.5);
-      addWall(1.92, 0.29, 0, 0.26, 0.58, 16.5);
-      addWall(0, 0.18, -8.12, 3.58, 0.36, 0.26);
-      addWall(0, 0.29, 8.12, 3.58, 0.58, 0.26);
-      addCornerWedge(-1.79, 7.99, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(1.79, 7.99, -1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(-1.79, -7.99, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(1.79, -7.99, -1, 1, 0.75, 0.18, 0.36);
-      addIce(0, 0.1, -1.0, 1.8, 3.6);
-      addSand(-1.0, 0.1, -4.0, 1.2, 1.8);
-      addBumper(-1.1, 0.1, 2.8, 0.38);
-      addBumper(1.1, 0.1, 4.2, 0.38);
+      addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 14, 0, 5.5, 0.21);
+      addWall(-2.02, 0.29, 0, 0.26, 0.58, 14.5);
+      addWall(2.02, 0.29, 0, 0.26, 0.58, 14.5);
+      addWall(0, 0.18, -7.12, 3.78, 0.36, 0.26);
+      addWall(0, 0.29, 7.12, 3.78, 0.58, 0.26);
+      addCornerWedge(-1.89, 6.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 6.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.89, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -6.99, -1, 1, 0.75, 0.18, 0.36);
+
+      // Ortada düz atışı tatlı bir şekilde kesen şık ahşap engel
+      addWoodLog(0, 0.20, 0.0, 2.0, 0.35, 0);
+
+      // Sağ ve Sol duvarda 45° trickshot bant blokları (Kılavuz rayı buraya çarpınca doğrudan deliğe döner!)
+      addCornerWedge(1.89, -0.6, -1, 1, 0.85, 0.29, 0.58);
+      addCornerWedge(-1.89, -0.6, 1, 1, 0.85, 0.29, 0.58);
     }
 
-    // --- Hole 3 (3. Değirmen & Kum Tuzağı - Klasik L Dönüş) ---
+    // --- Hole 3 (3. Hızlı Buz Tüneli - Sürtünmesiz Akış & İvme) ---
     function buildHole3() {
+      addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 16, 0, 6.5, 0.21);
+      addWall(-2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(0, 0.18, -8.12, 3.78, 0.36, 0.26);
+      addWall(0, 0.29, 8.12, 3.78, 0.58, 0.26);
+      addCornerWedge(-1.89, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.89, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -7.99, -1, 1, 0.75, 0.18, 0.36);
+
+      // Merkezi kesintisiz buz tüneli (Top buzla buluştuğunda yüksek hızla bayrağa akar!)
+      addIce(0, 0.1, 0.0, 2.2, 7.5);
+
+      // Yan koruyucu yumuşak tamponlar
+      addBumper(-1.2, 0.1, 2.2, 0.36);
+      addBumper(1.2, 0.1, 2.2, 0.36);
+    }
+
+    // --- Hole 4 (4. Pinball Tamponu - Enerjik Tepki & Sekme Hazzı) ---
+    function buildHole4() {
+      addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 16, 0, 6.5, 0.21);
+      addWall(-2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(0, 0.18, -8.12, 3.78, 0.36, 0.26);
+      addWall(0, 0.29, 8.12, 3.78, 0.58, 0.26);
+      addCornerWedge(-1.89, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.89, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -7.99, -1, 1, 0.75, 0.18, 0.36);
+
+      // İki stratejik pinball tamponu: Vurunca enerjisini artırıp deliğe fırlatır!
+      addBumper(-0.85, 0.1, -0.5, 0.44);
+      addBumper(0.85, 0.1, 2.0, 0.44);
+    }
+
+    // --- Hole 5 (5. Çift Bant L-Virajı - Klasik L Dönüş Trickshot) ---
+    function buildHole5() {
       addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
       addWall(-5.22, 0.29, -1.45, 0.26, 0.58, 11.6);
       addWall(-3.5, 0.18, -7.12, 3.18, 0.36, 0.26);
       addWall(-1.78, 0.29, -3.12, 0.26, 0.58, 7.74);
       addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
       addWall(-1.6, 0.29, 4.22, 7.45, 0.58, 0.28);
-      // Orta koridor güney duvarı: x = -1.78'den x = 5.22'ye kadar 100% kesintisiz kapatıldı!
       addWall(1.72, 0.29, 0.88, 7.00, 0.58, 0.26);
-      addRotor(0.5, 0.1, 2.5);
-      addSand(-1.0, 0.1, 2.5, 1.5, 1.5);
       addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
       addWall(5.22, 0.29, 5.25, 0.26, 0.58, 9.0);
       addWall(1.78, 0.29, 6.85, 0.26, 0.58, 5.4);
       addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
+
+      // Köşe bant blokları: Çift sekme ile harika L virajı dönüşü!
       addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
@@ -2647,79 +2747,24 @@
       addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
     }
 
-    // --- Hole 4 (4. Çift Buz Geçidi - Yüksek Hızlı Düzlük) ---
-    function buildHole4() {
-      addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 17, 0, 7.0, 0.21);
-      addWall(-2.02, 0.29, 0, 0.26, 0.58, 17.5);
-      addWall(2.02, 0.29, 0, 0.26, 0.58, 17.5);
-      addWall(0, 0.18, -8.62, 3.78, 0.36, 0.26);
-      addWall(0, 0.29, 8.62, 3.78, 0.58, 0.26);
-      addCornerWedge(-1.89, 8.49, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(1.89, 8.49, -1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(-1.89, -8.49, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(1.89, -8.49, -1, 1, 0.75, 0.18, 0.36);
-      addIce(0, 0.1, -3.0, 1.9, 3.0);
-      addIce(0, 0.1, 2.5, 1.9, 3.0);
-      addBumper(-1.1, 0.1, -0.2, 0.40);
-      addBumper(1.1, 0.1, -0.2, 0.40);
-      addSand(0, 0.1, 8.0, 2.5, 0.8);
-    }
-
-    // --- Hole 5 (5. Zirve & Pinball Tamponları - Rampa Tırmanışı) ---
-    function buildHole5() {
-      addFloor(0, 0, -4, 3.8, 0.2, 7.0);
-      addWall(-2.02, 0.29, -3.95, 0.26, 0.58, 7.5);
-      addWall(2.02, 0.29, -3.95, 0.26, 0.58, 7.5);
-      addWall(0, 0.18, -7.62, 3.78, 0.36, 0.26);
-      const ramp = addFloor(0, 0.275, 2.0, 3.8, 0.2, 5.1);
-      ramp.rotation.x = -0.11;
-      ramp.updateMatrixWorld(true);
-      const rw1 = addWall(-2.02, 0.50, 2.0, 0.26, 0.60, 5.2);
-      rw1.rotation.x = -0.11;
-      const rw2 = addWall(2.02, 0.50, 2.0, 0.26, 0.60, 5.2);
-      rw2.rotation.x = -0.11;
-      addFloorWithCupHole(0, 0.55, 7.45, 4.6, 0.2, 6.2, 0, 8.5, 0.21);
-      addWall(-2.42, 0.85, 7.45, 0.26, 0.60, 6.6);
-      addWall(2.42, 0.85, 7.45, 0.26, 0.60, 6.6);
-      addWall(0, 0.85, 10.65, 4.58, 0.60, 0.28);
-      addWall(-2.22, 0.85, 4.35, 0.65, 0.60, 0.26);
-      addWall(2.22, 0.85, 4.35, 0.65, 0.60, 0.26);
-      addCornerWedge(-1.89, -7.49, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(1.89, -7.49, -1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-2.29, 10.52, 1, -1, 0.75, 0.85, 0.60);
-      addCornerWedge(2.29, 10.52, -1, -1, 0.75, 0.85, 0.60);
-      addBumper(-1.4, 0.65, 6.5, 0.4);
-      addBumper(1.4, 0.65, 6.5, 0.4);
-    }
-
-    // --- Hole 6 (6. Zigzag Virajlar - Hassas Bant Vuruşları) ---
+    // --- Hole 6 (6. Kum Tuzağı & Akıllı Rota - Risk ve Ödül) ---
     function buildHole6() {
-      // Sol başlangıç koridoru (z: -6.8'den 1.3'e)
-      addFloor(-3.5, 0, -2.75, 3.4, 0.2, 8.1);
-      addWall(-5.22, 0.29, -2.75, 0.26, 0.58, 8.2);
-      addWall(-3.5, 0.18, -6.82, 3.18, 0.36, 0.26);
-      addWall(-1.78, 0.29, -4.0, 0.26, 0.58, 5.4);
+      addFloorWithCupHole(0, 0, 0, 3.8, 0.2, 16, 0, 6.5, 0.21);
+      addWall(-2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(2.02, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(0, 0.18, -8.12, 3.78, 0.36, 0.26);
+      addWall(0, 0.29, 8.12, 3.78, 0.58, 0.26);
+      addCornerWedge(-1.89, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(1.89, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-1.89, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(1.89, -7.99, -1, 1, 0.75, 0.18, 0.36);
 
-      // Orta geçiş koridoru (buzlu bağlantı)
-      addFloor(0, 0, 0.0, 4.4, 0.2, 2.6);
-      addIce(0, 0.1, 0.0, 2.2, 1.8);
-      // Kesintisiz boydan boya Kuzey ve Güney çevre duvarları
-      addWall(-1.71, 0.29, 1.32, 7.02, 0.58, 0.26);
-      addWall(1.71, 0.29, -1.32, 7.02, 0.58, 0.26);
+      // Ortada yavaşlatan kum alanı
+      addSand(0, 0.1, 0.0, 2.0, 3.4);
 
-      // Sağ hedef koridoru (z: -1.3'ten 6.8'e)
-      addFloorWithCupHole(3.5, 0, 2.75, 3.4, 0.2, 8.1, 3.5, 6.0, 0.21);
-      addWall(5.22, 0.29, 2.75, 0.26, 0.58, 8.2);
-      addWall(1.78, 0.29, 4.0, 0.26, 0.58, 5.4);
-      addWall(3.5, 0.29, 6.82, 3.18, 0.58, 0.26);
-      addCornerWedge(-5.09, -6.69, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-1.91, -6.69, -1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-5.09, 1.19, 1, -1, 0.85, 0.29, 0.58);
-      addCornerWedge(5.09, -1.19, -1, 1, 0.85, 0.29, 0.58);
-      addCornerWedge(1.91, 6.69, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(5.09, 6.69, -1, -1, 0.75, 0.29, 0.58);
-      addSand(3.5, 0.1, 1.2, 1.4, 1.4);
-      addBumper(-3.5, 0.1, -0.6, 0.4);
+      // Sağ ve solda kumu baypas eden pürüzsüz bant sekme blokları!
+      addCornerWedge(-1.89, 0.0, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(1.89, 0.0, -1, -1, 0.85, 0.29, 0.58);
     }
 
     // --- Hole 7 (7. Buzlu Değirmen Labirenti - Zamanlama ve Hız) ---
@@ -2915,6 +2960,10 @@
       const ballScreen = getBallScreenPos();
       const distToBall = Math.hypot(clientX - ballScreen.x, clientY - ballScreen.y);
 
+      // Oyuncu dokunduğu anda öğretici el anında kaybolur
+      const tutHandEl = document.getElementById('tutorial-hand');
+      if (tutHandEl) tutHandEl.style.display = 'none';
+
       // Sapan özelliği SADECE topun üzerine dokunulup çekildiğinde çalışır (65px geniş temas yarıçapı)
       if (distToBall <= 65) {
         interactionMode = 'SLINGSHOT';
@@ -3021,44 +3070,194 @@
       return { hex, emissiveHex, hexStr };
     }
 
+    // --- 2D Ray-Segment Çarpışma ve Açılı Bant Sekme Kılavuzu (Ricochet Trajectory) ---
+    function intersectAimRaySegment(p1x, p1z, p2x, p2z, s1x, s1z, s2x, s2z) {
+      const rDx = p2x - p1x;
+      const rDz = p2z - p1z;
+      const sDx = s2x - s1x;
+      const sDz = s2z - s1z;
+
+      const denom = rDx * sDz - rDz * sDx;
+      if (Math.abs(denom) < 1e-6) return null;
+
+      const t = ((s1x - p1x) * sDz - (s1z - p1z) * sDx) / denom;
+      const u = ((s1x - p1x) * rDz - (s1z - p1z) * rDx) / denom;
+
+      if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+        const totalDist = Math.hypot(rDx, rDz);
+        return { dist: t * totalDist, t, x: p1x + t * rDx, z: p1z + t * rDz };
+      }
+      return null;
+    }
+
+    function computeAimTrajectory(originX, originZ, dirX, dirZ, maxDist) {
+      const segments = [];
+      let curX = originX;
+      let curZ = originZ;
+      let curDx = dirX;
+      let curDz = dirZ;
+      let remDist = maxDist;
+
+      // Maksimum 2 kez sekme hesaplanır (Trickshot kalitesi)
+      for (let bounce = 0; bounce < 2 && remDist > 0.05; bounce++) {
+        let closestT = remDist;
+        let hitNormX = 0;
+        let hitNormZ = 0;
+        let didHit = false;
+
+        // 1. Köşe Pahları (45-derece ahşap bantlar)
+        for (let i = 0; i < cornerWedges.length; i++) {
+          const w = cornerWedges[i];
+          const s1x = w.v1x + w.nx * ballRadius;
+          const s1z = w.v1z + w.nz * ballRadius;
+          const s2x = w.v2x + w.nx * ballRadius;
+          const s2z = w.v2z + w.nz * ballRadius;
+
+          const dot = curDx * w.nx + curDz * w.nz;
+          if (dot < -0.01) {
+            const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, s1x, s1z, s2x, s2z);
+            if (hit && hit.dist < closestT && hit.dist > 0.05) {
+              closestT = hit.dist;
+              hitNormX = w.nx;
+              hitNormZ = w.nz;
+              didHit = true;
+            }
+          }
+        }
+
+        // 2. Düz Duvarlar (Kutu Çarpışıcılar)
+        for (let i = 0; i < colliders.length; i++) {
+          const c = colliders[i];
+          const minX = c.box.min.x - ballRadius;
+          const maxX = c.box.max.x + ballRadius;
+          const minZ = c.box.min.z - ballRadius;
+          const maxZ = c.box.max.z + ballRadius;
+
+          // Güney yüzey
+          if (curDz > 0.01) {
+            const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, minX, minZ, maxX, minZ);
+            if (hit && hit.dist < closestT && hit.dist > 0.05) {
+              closestT = hit.dist;
+              hitNormX = 0; hitNormZ = -1; didHit = true;
+            }
+          }
+          // Kuzey yüzey
+          if (curDz < -0.01) {
+            const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, minX, maxZ, maxX, maxZ);
+            if (hit && hit.dist < closestT && hit.dist > 0.05) {
+              closestT = hit.dist;
+              hitNormX = 0; hitNormZ = 1; didHit = true;
+            }
+          }
+          // Batı yüzey
+          if (curDx > 0.01) {
+            const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, minX, minZ, minX, maxZ);
+            if (hit && hit.dist < closestT && hit.dist > 0.05) {
+              closestT = hit.dist;
+              hitNormX = -1; hitNormZ = 0; didHit = true;
+            }
+          }
+          // Doğu yüzey
+          if (curDx < -0.01) {
+            const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, maxX, minZ, maxX, maxZ);
+            if (hit && hit.dist < closestT && hit.dist > 0.05) {
+              closestT = hit.dist;
+              hitNormX = 1; hitNormZ = 0; didHit = true;
+            }
+          }
+        }
+
+        if (didHit) {
+          segments.push({
+            x1: curX, z1: curZ,
+            x2: curX + curDx * closestT, z2: curZ + curDz * closestT,
+            dist: closestT,
+            dirX: curDx, dirZ: curDz
+          });
+
+          curX = curX + curDx * closestT;
+          curZ = curZ + curDz * closestT;
+          remDist -= closestT;
+
+          // Yansıma vektörü hesabı: r = d - 2*(d.n)*n
+          const vDotN = curDx * hitNormX + curDz * hitNormZ;
+          curDx = curDx - 2 * vDotN * hitNormX;
+          curDz = curDz - 2 * vDotN * hitNormZ;
+          const len = Math.hypot(curDx, curDz);
+          if (len > 0.001) {
+            curDx /= len;
+            curDz /= len;
+          }
+        } else {
+          segments.push({
+            x1: curX, z1: curZ,
+            x2: curX + curDx * remDist, z2: curZ + curDz * remDist,
+            dist: remDist,
+            dirX: curDx, dirZ: curDz
+          });
+          remDist = 0;
+          break;
+        }
+      }
+
+      return segments;
+    }
+
     function updateAimVisuals() {
       aim3DGroup.visible = true;
-      // powerBadge gizli kalır
 
       const aimCol = getAimColor(powerRatio);
-      // Çekiş gücüne göre sırayla yanan Golf Battle barem seviye çubukları
-      const activeCount = Math.min(Math.max(Math.floor(powerRatio * 9.9) + 1, 1), maxBars);
-      const aimAngle = Math.atan2(aimDir.x, aimDir.z);
+      const activeCount = Math.min(Math.max(Math.floor(powerRatio * (maxBars - 0.1)) + 1, 1), maxBars);
       const spacing = 0.28 + powerRatio * 0.14;
       const animPhase = gameElapsedTime * 7.5;
 
+      const totalAimDist = 0.30 + activeCount * spacing;
+      const trajectory = computeAimTrajectory(ballPos.x, ballPos.z, aimDir.x, aimDir.z, totalAimDist);
+
       for (let i = 0; i < maxBars; i++) {
         if (i < activeCount) {
-          const dist = 0.30 + (i + 1) * spacing;
-          const targetX = ballPos.x + aimDir.x * dist;
-          const targetZ = ballPos.z + aimDir.z * dist;
+          const targetDistAlongPath = 0.30 + (i + 1) * spacing;
 
-          // Zemin kotunu ve rampa eğimini tam örnekle (Rampada ASLA alta batmaz!)
+          let distAcc = 0;
+          let targetX = ballPos.x + aimDir.x * targetDistAlongPath;
+          let targetZ = ballPos.z + aimDir.z * targetDistAlongPath;
+          let barDirX = aimDir.x;
+          let barDirZ = aimDir.z;
+
+          for (let s = 0; s < trajectory.length; s++) {
+            const seg = trajectory[s];
+            if (targetDistAlongPath <= distAcc + seg.dist || s === trajectory.length - 1) {
+              const segT = Math.max(0, Math.min(seg.dist, targetDistAlongPath - distAcc));
+              targetX = seg.x1 + seg.dirX * segT;
+              targetZ = seg.z1 + seg.dirZ * segT;
+              barDirX = seg.dirX;
+              barDirZ = seg.dirZ;
+              break;
+            }
+            distAcc += seg.dist;
+          }
+
+          const barAngle = Math.atan2(barDirX, barDirZ);
+
+          // Zemin kotunu ve rampa eğimini tam örnekle
           const groundY = (getGroundHeight(targetX, targetZ, ballPos.y - ballRadius) ?? (ballPos.y - ballRadius)) + 0.024;
           const aheadDist = 0.16;
-          const aheadY = (getGroundHeight(targetX + aimDir.x * aheadDist, targetZ + aimDir.z * aheadDist, groundY) ?? groundY);
+          const aheadY = (getGroundHeight(targetX + barDirX * aheadDist, targetZ + barDirZ * aheadDist, groundY) ?? groundY);
           const slopePitch = Math.atan2(aheadY - groundY, aheadDist);
 
           aimBars[i].position.set(targetX, groundY, targetZ);
           aimBars[i].rotation.set(0, 0, 0);
-          aimBars[i].rotation.y = aimAngle;
-          aimBars[i].rotateX(-slopePitch); // Rampanın eğimini 100% takip eder!
+          aimBars[i].rotation.y = barAngle;
+          aimBars[i].rotateX(-slopePitch);
 
-          // Aerodinamik barem genişlemesi (hedefe doğru büyüyen şık enerji çizgileri)
+          // Aerodinamik barem genişlemesi
           const barScaleX = 0.85 + (i / maxBars) * 0.45;
           const barScaleZ = 0.80 + (i / maxBars) * 0.30;
           aimBars[i].scale.set(barScaleX, 1, barScaleZ);
 
-          // Barem Seviye Rengi: Düşük kademeler yeşil, orta kademeler sarı, zirve kademeler alev kırmızısı
           const barRatio = (i + 1) / maxBars;
           const barCol = getAimColor(barRatio);
 
-          // İleriye doğru akan neon enerji nabzı dalgası
           const pulse = 0.70 + 0.35 * Math.sin(animPhase - i * 0.65);
           aimBars[i].material.color.setHex(barCol.hex);
           aimBars[i].material.emissive.setHex(barCol.emissiveHex);
@@ -3069,17 +3268,21 @@
         }
       }
 
-      // Uçtaki Hedef Göstergesi Yayı ve Lazer Noktası (Crosshair Target Arc)
-      const tipDist = 0.30 + (activeCount + 1) * spacing;
-      const tipX = ballPos.x + aimDir.x * tipDist;
-      const tipZ = ballPos.z + aimDir.z * tipDist;
+      // Uçtaki Hedef Göstergesi Yayı ve Lazer Noktası (Sekme açısını takip eder)
+      const lastSeg = trajectory[trajectory.length - 1];
+      const tipX = lastSeg ? lastSeg.x2 : ballPos.x + aimDir.x * totalAimDist;
+      const tipZ = lastSeg ? lastSeg.z2 : ballPos.z + aimDir.z * totalAimDist;
+      const tipDirX = lastSeg ? lastSeg.dirX : aimDir.x;
+      const tipDirZ = lastSeg ? lastSeg.dirZ : aimDir.z;
+      const tipAngle = Math.atan2(tipDirX, tipDirZ);
+
       const tipGroundY = (getGroundHeight(tipX, tipZ, ballPos.y - ballRadius) ?? (ballPos.y - ballRadius)) + 0.026;
-      const tipAheadY = (getGroundHeight(tipX + aimDir.x * 0.16, tipZ + aimDir.z * 0.16, tipGroundY) ?? tipGroundY);
+      const tipAheadY = (getGroundHeight(tipX + tipDirX * 0.16, tipZ + tipDirZ * 0.16, tipGroundY) ?? tipGroundY);
       const tipSlope = Math.atan2(tipAheadY - tipGroundY, 0.16);
 
       reticleArcMesh.position.set(tipX, tipGroundY, tipZ);
       reticleArcMesh.rotation.set(0, 0, 0);
-      reticleArcMesh.rotation.y = aimAngle;
+      reticleArcMesh.rotation.y = tipAngle;
       reticleArcMesh.rotateX(-tipSlope);
       const arcScale = 0.95 + powerRatio * 0.35;
       reticleArcMesh.scale.set(arcScale, arcScale, arcScale);
@@ -3090,13 +3293,11 @@
 
       reticlePipMesh.position.set(tipX, tipGroundY + 0.005, tipZ);
       reticlePipMesh.rotation.set(0, 0, 0);
-      reticlePipMesh.rotation.y = aimAngle;
+      reticlePipMesh.rotation.y = tipAngle;
       reticlePipMesh.rotateX(-tipSlope);
       reticlePipMesh.material.color.setHex(aimCol.hex);
       reticlePipMesh.material.emissive.setHex(aimCol.emissiveHex);
       reticlePipMesh.visible = true;
-
-      // Güç rozeti kaldırıldı - sadece 3D barem gösterilir
     }
 
     function hideAimVisuals() {
@@ -3763,8 +3964,79 @@
       }
     }
 
+
+    // --- Voodoo Zafer Kutlaması Konfeti Sistemi ---
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confettiCtx = confettiCanvas ? confettiCanvas.getContext('2d') : null;
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function resizeConfetti() {
+      if (!confettiCanvas) return;
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeConfetti);
+    resizeConfetti();
+
+    function launchConfetti() {
+      if (!confettiCanvas || !confettiCtx) return;
+      confettiParticles = [];
+      const colors = ['#ffd700', '#ff3b30', '#34c759', '#007aff', '#ff9500', '#af52de', '#4df373', '#ff2e6d'];
+      for (let i = 0; i < 80; i++) {
+        confettiParticles.push({
+          x: window.innerWidth * 0.5 + (Math.random() - 0.5) * 60,
+          y: window.innerHeight * 0.45 + (Math.random() - 0.5) * 60,
+          vx: (Math.random() - 0.5) * 16,
+          vy: -8 - Math.random() * 12,
+          size: 7 + Math.random() * 8,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.22,
+          life: 1.0,
+          decay: 0.009 + Math.random() * 0.008
+        });
+      }
+
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+      function updateConfetti() {
+        confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        let alive = 0;
+        for (let p of confettiParticles) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.38;
+          p.vx *= 0.98;
+          p.rotation += p.rotSpeed;
+          p.life -= p.decay;
+
+          if (p.life > 0 && p.y < confettiCanvas.height + 20) {
+            alive++;
+            confettiCtx.save();
+            confettiCtx.translate(p.x, p.y);
+            confettiCtx.rotate(p.rotation);
+            confettiCtx.globalAlpha = Math.max(0, p.life);
+            confettiCtx.fillStyle = p.color;
+            confettiCtx.fillRect(-p.size * 0.5, -p.size * 0.5, p.size, p.size * 0.6);
+            confettiCtx.restore();
+          }
+        }
+        if (alive > 0) {
+          confettiAnimId = requestAnimationFrame(updateConfetti);
+        } else {
+          confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+          confettiAnimId = null;
+        }
+      }
+      confettiAnimId = requestAnimationFrame(updateConfetti);
+    }
+
     function showHoleModal() {
       const modal = document.getElementById('modal');
+      launchConfetti();
+      if (navigator.vibrate) {
+        try { navigator.vibrate([40, 60, 50, 80]); } catch(e){}
+      }
       const title = document.getElementById('modal-title');
       const stars = document.getElementById('modal-stars');
       const score = document.getElementById('modal-score');
@@ -3907,6 +4179,23 @@
       // Dağ akarsuyunun canlı akıntı akışı (Flowing downstream river water)
       if (envRiverTex) {
         envRiverTex.offset.y += 0.0022;
+      }
+
+      // Voodoo dinamik öğretici el takip fonksiyonu
+      const tutHandEl = document.getElementById('tutorial-hand');
+      if (tutHandEl) {
+        if (currentHole === 0 && strokes === 0 && !isMoving && interactionMode === 'NONE') {
+          const ballSc = getBallScreenPos();
+          if (ballSc.inFront) {
+            tutHandEl.style.display = 'block';
+            tutHandEl.style.left = ballSc.x + 'px';
+            tutHandEl.style.top = (ballSc.y + 4) + 'px';
+          } else {
+            tutHandEl.style.display = 'none';
+          }
+        } else {
+          tutHandEl.style.display = 'none';
+        }
       }
 
       updateCamera(dt);
