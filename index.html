@@ -196,25 +196,98 @@
       background: rgba(255, 255, 255, 0.28);
     }
 
-    /* Voodoo Style Tutorial Hand */
+    /* Voodoo Style Dynamic Tutorial Hand & Slingshot Guide */
     #tutorial-hand {
       position: absolute;
       pointer-events: none;
       z-index: 50;
-      width: 68px;
-      height: 68px;
-      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
       display: none;
-      animation: tutorialDrag 2.0s ease-in-out infinite;
     }
-    @keyframes tutorialDrag {
-      0% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
-      15% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-      35% { transform: translate(-50%, -50%) scale(0.92); opacity: 1; }
-      65% { transform: translate(-50%, calc(-50% + 72px)) scale(0.86); opacity: 1; }
-      80% { transform: translate(-50%, calc(-50% + 72px)) scale(1.04); opacity: 0.8; }
-      95% { transform: translate(-50%, calc(-50% + 72px)) scale(1); opacity: 0; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    .tut-touch-pulse {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid #4df373;
+      background: rgba(77, 243, 115, 0.25);
+      animation: tutPulse 2.0s ease-out infinite;
+    }
+    @keyframes tutPulse {
+      0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.9; }
+      50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+    }
+    .tut-aim-guide {
+      position: absolute;
+      left: 0;
+      bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transform: translateX(-50%);
+      animation: tutBeam 2.0s ease-in-out infinite;
+    }
+    .tut-arrow {
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 18px solid #4df373;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 0 10px rgba(77, 243, 115, 1));
+    }
+    .tut-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4df373;
+      margin: 5px 0;
+      box-shadow: 0 0 8px rgba(77, 243, 115, 1);
+    }
+    @keyframes tutBeam {
+      0%, 100% { opacity: 0.85; transform: translateX(-50%) translateY(0); }
+      50% { opacity: 1; transform: translateX(-50%) translateY(-14px); }
+    }
+    .tut-hand-icon {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translate(-32px, -18px);
+      animation: tutDragHand 2.0s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+    }
+    @keyframes tutDragHand {
+      0% { transform: translate(-32px, -18px) scale(1); }
+      15% { transform: translate(-32px, -18px) scale(0.92); }
+      55%, 70% { transform: translate(-32px, calc(-18px + 75px)) scale(0.88); }
+      82% { transform: translate(-32px, -18px) scale(1.05); }
+      100% { transform: translate(-32px, -18px) scale(1); }
+    }
+    .tut-pill-badge {
+      position: absolute;
+      left: 0;
+      top: 72px;
+      transform: translateX(-50%);
+      background: rgba(6, 18, 10, 0.94);
+      border: 1.5px solid rgba(77, 243, 115, 0.8);
+      border-radius: 20px;
+      padding: 6px 14px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      animation: tutPillPulse 2.0s ease-in-out infinite;
+    }
+    @keyframes tutPillPulse {
+      0%, 100% { transform: translateX(-50%) scale(1.0); }
+      50% { transform: translateX(-50%) scale(1.06); }
     }
 
     /* Confetti Canvas */
@@ -329,11 +402,22 @@
   <div id="power-badge" style="display:none !important;"></div>
 
   <div id="tutorial-hand">
-    <svg width="68" height="68" viewBox="0 0 64 64" fill="none">
-      <circle cx="32" cy="18" r="14" fill="rgba(77,243,115,0.28)" />
-      <circle cx="32" cy="18" r="6" fill="#4df373" />
-      <path d="M32 20 C28 20 25 24 25 30 L25 40 C25 46 29 50 34 50 L38 50 C43 50 47 46 47 40 L47 35 C47 32 45 30 42 30 C40 30 39 31 38 32 L38 25 C38 22 35 20 32 20 Z" fill="white" stroke="#1f2937" stroke-width="2.5" stroke-linejoin="round"/>
-    </svg>
+    <div class="tut-touch-pulse"></div>
+    <div class="tut-aim-guide">
+      <div class="tut-arrow"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+    </div>
+    <div class="tut-hand-icon">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+        <circle cx="32" cy="18" r="14" fill="rgba(77,243,115,0.30)" />
+        <circle cx="32" cy="18" r="6" fill="#4df373" />
+        <path d="M32 20 C28 20 25 24 25 30 L25 40 C25 46 29 50 34 50 L38 50 C43 50 47 46 47 40 L47 35 C47 32 45 30 42 30 C40 30 39 31 38 32 L38 25 C38 22 35 20 32 20 Z" fill="white" stroke="#1f2937" stroke-width="2.6" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="tut-pill-badge">🎯 Topu Geri Çek ve Bırak</div>
   </div>
   <canvas id="confetti-canvas"></canvas>
 
@@ -715,33 +799,29 @@
       return tex;
     }
 
-    // --- 3D Kupa İçi Duvar Dokusu (Beyaz Turnuva Astarı ve Derinlik Gradyanı) ---
+    // --- 3D Kupa İçi Duvar Dokusu (Derin Siyah Çukur ve Gölge Derinliği) ---
     function createCupWallTexture() {
       const canvas = document.createElement('canvas');
       canvas.width = 128;
       canvas.height = 256;
       const ctx = canvas.getContext('2d');
 
-      // Üstten alta derinlik gradyanı:
-      // Üst %18: Beyaz turnuva kupa plastik halkası
-      // Orta: Gölgeli kupa içi derinleşmesi
-      // Dip: Koyu çukur tabanı
+      // Üstten alta derin siyah çukur gradyanı (Kullanıcı Talebi: simsiyah delik içi):
       const grad = ctx.createLinearGradient(0, 0, 0, 256);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.16, '#f2f2f2');
-      grad.addColorStop(0.24, '#9e9e9e');
-      grad.addColorStop(0.55, '#2c3035');
-      grad.addColorStop(1, '#0e1012');
+      grad.addColorStop(0, '#1a1d22');
+      grad.addColorStop(0.20, '#101215');
+      grad.addColorStop(0.55, '#060709');
+      grad.addColorStop(1, '#010203');
 
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 128, 256);
 
-      // İnce dikey kupa iç kaburga çizgileri
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      // İnce dikey kupa iç çizgileri
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
       ctx.lineWidth = 1;
       for (let x = 8; x < 128; x += 16) {
         ctx.beginPath();
-        ctx.moveTo(x, 50);
+        ctx.moveTo(x, 10);
         ctx.lineTo(x, 256);
         ctx.stroke();
       }
@@ -749,6 +829,42 @@
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
+      return tex;
+    }
+
+    // --- Kırmızı-Beyaz Şeritli Şampiyona Bayrak Direği Dokusu (Kullanıcı Talebi) ---
+    function createStripedFlagPoleTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // 8 adet dönüşümlü kırmızı ve beyaz şerit
+      const numStripes = 8;
+      const stripeH = 256 / numStripes;
+
+      for (let i = 0; i < numStripes; i++) {
+        const isRed = (i % 2 === 0);
+        ctx.fillStyle = isRed ? '#e52521' : '#ffffff';
+        ctx.fillRect(0, i * stripeH, 64, stripeH);
+
+        // Şerit birleşim konturları
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+        ctx.fillRect(0, (i + 1) * stripeH - 1.5, 64, 1.5);
+      }
+
+      // Direğe dikey silindirik hacim ve parlama gölgesi
+      const cylGrad = ctx.createLinearGradient(0, 0, 64, 0);
+      cylGrad.addColorStop(0, 'rgba(0,0,0,0.25)');
+      cylGrad.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+      cylGrad.addColorStop(0.70, 'rgba(255,255,255,0.0)');
+      cylGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = cylGrad;
+      ctx.fillRect(0, 0, 64, 256);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
       return tex;
     }
 
@@ -1860,6 +1976,7 @@
     let isInHole = false;
     let isSinking = false;
     let isAirborne = false;
+    let tutorialDismissed = false;
     let sinkFallVel = 0;
     let ballPos = new THREE.Vector3(0, 0.22, -6);
     let ballVel = new THREE.Vector3(0, 0, 0);
@@ -1982,7 +2099,7 @@
       {
         name: "10. Şampiyonlar Zirvesi",
         par: 4,
-        spawn: new THREE.Vector3(-4.0, 0.22, -7.0),
+        spawn: new THREE.Vector3(-4.0, 0.22, -5.8),
         cup: new THREE.Vector3(4.0, 0.65, 9.5),
         initYaw: 0
       }
@@ -2044,6 +2161,7 @@
       scene.updateMatrixWorld(true);
 
       // Bölüm 1'de Voodoo animasyonlu gösterge eli tetiklenir
+      tutorialDismissed = false;
       const tutHand = document.getElementById('tutorial-hand');
       if (tutHand) {
         if (idx === 0) {
@@ -2500,12 +2618,12 @@
       cupWall.position.set(pos.x, pos.y - cupDepth * 0.5 + 0.002, pos.z);
       courseGroup.add(cupWall);
 
-      // 2. Kupanın Çukur Dip Tabanı (Sunken Bottom Floor)
+      // 2. Kupanın Çukur Dip Tabanı (Sunken Bottom Floor - Simsiyah Derinlik)
       const cupBottomGeo = new THREE.CircleGeometry(cupRadius * 0.90, 48);
       const cupBottomMat = new THREE.MeshStandardMaterial({
-        color: 0x111619,
-        roughness: 0.75,
-        metalness: 0.25
+        color: 0x050608,
+        roughness: 0.90,
+        metalness: 0.05
       });
       const cupBottom = new THREE.Mesh(cupBottomGeo, cupBottomMat);
       cupBottom.rotation.x = -Math.PI / 2;
@@ -2513,8 +2631,8 @@
       courseGroup.add(cupBottom);
 
       // 3. Bayrak Direği Taban Kovası (Merkezdeki metalik kovan soket)
-      const socketGeo = new THREE.CylinderGeometry(0.038, 0.042, 0.04, 16);
-      const socketMat = new THREE.MeshStandardMaterial({ color: 0x2a3038, metalness: 0.6, roughness: 0.3 });
+      const socketGeo = new THREE.CylinderGeometry(0.036, 0.040, 0.04, 16);
+      const socketMat = new THREE.MeshStandardMaterial({ color: 0x15181c, metalness: 0.4, roughness: 0.5 });
       const socketMesh = new THREE.Mesh(socketGeo, socketMat);
       socketMesh.position.set(pos.x, pos.y - cupDepth + 0.02, pos.z);
       courseGroup.add(socketMesh);
@@ -2527,8 +2645,14 @@
       rimMesh.position.set(pos.x, pos.y + 0.004, pos.z);
       courseGroup.add(rimMesh);
 
-      // 5. Profesyonel Beyaz Bayrak Direği (Deliğin dibindeki kovandan yükselir)
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.2 }));
+      // 5. İlgi Çekici Kırmızı-Beyaz Şeritli Bayrak Direği (Kullanıcı Talebi)
+      const poleTex = createStripedFlagPoleTexture();
+      const poleMat = new THREE.MeshStandardMaterial({
+        map: poleTex,
+        roughness: 0.25,
+        metalness: 0.15
+      });
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.020, 2.2, 16), poleMat);
       pole.position.set(pos.x, pos.y - cupDepth * 0.5 + 0.95, pos.z);
       pole.castShadow = true;
       courseGroup.add(pole);
@@ -2628,8 +2752,7 @@
     }
 
     function spawnDecorations(idx = 0) {
-      treeColliders = [];
-      woodLogs = [];
+      // woodLogs ve treeColliders buildCourse başında sıfırlanır, burada tekrar sıfırlanmaz
 
       // Golf Battle Tarzı Köşeli Ahşap Kalas / Kiriş Engelleri (Square Timber Beams)
       // TÜM KALASLAR DUVARLARA MATEMATİKSEL OLARAK TAM YAPIŞIKTIR (SIFIR BOŞLUK)
@@ -2679,8 +2802,8 @@
       addCornerWedge(-1.89, -6.99, 1, 1, 0.75, 0.18, 0.36);
       addCornerWedge(1.89, -6.99, -1, 1, 0.75, 0.18, 0.36);
 
-      // Ortada düz atışı tatlı bir şekilde kesen şık ahşap engel
-      addWoodLog(0, 0.20, 0.0, 2.0, 0.35, 0);
+      // Ortada düz atışı tatlı bir şekilde kesen sağlam ahşap engel (Aktif fizik çarpışması)
+      addWoodLog(0, 0.10, 0.0, 2.0, 0.36, 0);
 
       // Sağ ve Sol duvarda 45° trickshot bant blokları (Kılavuz rayı buraya çarpınca doğrudan deliğe döner!)
       addCornerWedge(1.89, -0.6, -1, 1, 0.85, 0.29, 0.58);
@@ -2767,35 +2890,8 @@
       addCornerWedge(1.89, 0.0, -1, -1, 0.85, 0.29, 0.58);
     }
 
-    // --- Hole 7 (7. Buzlu Değirmen Labirenti - Zamanlama ve Hız) ---
+    // --- Hole 7 (7. Zirve Tırmanışı - Rampa & Zirve Değirmeni) ---
     function buildHole7() {
-      addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
-      addWall(-5.22, 0.29, -1.45, 0.26, 0.58, 11.6);
-      addWall(-3.5, 0.18, -7.12, 3.18, 0.36, 0.26);
-      addWall(-1.78, 0.29, -3.12, 0.26, 0.58, 7.74);
-      addIce(-3.5, 0.1, -1.0, 1.8, 2.8);
-      addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
-      addWall(-1.6, 0.29, 4.22, 7.45, 0.58, 0.28);
-      // Orta koridor güney duvarı: x = -1.78'den x = 5.22'ye kadar 100% kesintisiz kapatıldı!
-      addWall(1.72, 0.29, 0.88, 7.00, 0.58, 0.26);
-      addIce(0.0, 0.1, 2.5, 2.6, 2.2);
-      addRotor(0.0, 0.1, 2.5);
-      addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
-      addWall(5.22, 0.29, 5.25, 0.26, 0.58, 9.0);
-      addWall(1.78, 0.29, 6.85, 0.26, 0.58, 5.4);
-      addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
-      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
-      addCornerWedge(5.09, 1.01, -1, 1, 0.85, 0.29, 0.58);
-      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
-      addBumper(2.3, 0.1, 5.5, 0.38);
-      addBumper(4.7, 0.1, 5.5, 0.38);
-    }
-
-    // --- Hole 8 (8. Buzlu Zirve Tırmanışı - Rampa & Zirve Değirmeni) ---
-    function buildHole8() {
       addFloor(0, 0, -4.0, 3.8, 0.2, 6.5);
       addWall(-2.02, 0.29, -3.95, 0.26, 0.58, 7.0);
       addWall(2.02, 0.29, -3.95, 0.26, 0.58, 7.0);
@@ -2822,6 +2918,33 @@
       addRotor(0, 0.65, 5.8);
       addBumper(-1.3, 0.65, 7.8, 0.38);
       addBumper(1.3, 0.65, 7.8, 0.38);
+    }
+
+    // --- Hole 8 (8. Değirmen Zamanlaması - Zamanlama ve Hız Labirenti) ---
+    function buildHole8() {
+      addFloor(-3.5, 0, -3.1, 3.4, 0.2, 7.8);
+      addWall(-5.22, 0.29, -1.45, 0.26, 0.58, 11.6);
+      addWall(-3.5, 0.18, -7.12, 3.18, 0.36, 0.26);
+      addWall(-1.78, 0.29, -3.12, 0.26, 0.58, 7.74);
+      addIce(-3.5, 0.1, -1.0, 1.8, 2.8);
+      addFloor(0, 0, 2.5, 10.4, 0.2, 3.4);
+      addWall(-1.6, 0.29, 4.22, 7.45, 0.58, 0.28);
+      // Orta koridor güney duvarı: x = -1.78'den x = 5.22'ye kadar 100% kesintisiz kapatıldı!
+      addWall(1.72, 0.29, 0.88, 7.00, 0.58, 0.26);
+      addIce(0.0, 0.1, 2.5, 2.6, 2.2);
+      addRotor(0.0, 0.1, 2.5);
+      addFloorWithCupHole(3.5, 0, 6.0, 3.4, 0.2, 7.0, 3.5, 7.5, 0.21);
+      addWall(5.22, 0.29, 5.25, 0.26, 0.58, 9.0);
+      addWall(1.78, 0.29, 6.85, 0.26, 0.58, 5.4);
+      addWall(3.5, 0.29, 9.62, 3.18, 0.58, 0.26);
+      addCornerWedge(-5.09, -6.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-1.91, -6.99, -1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(-5.09, 4.09, 1, -1, 0.85, 0.29, 0.58);
+      addCornerWedge(5.09, 1.01, -1, 1, 0.85, 0.29, 0.58);
+      addCornerWedge(1.91, 9.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.09, 9.49, -1, -1, 0.75, 0.29, 0.58);
+      addBumper(2.3, 0.1, 5.5, 0.38);
+      addBumper(4.7, 0.1, 5.5, 0.38);
     }
 
     // --- Hole 9 (9. Kanyon Kıvrımları & Çifte Yol - İkili Rota & Taktiksel Bant Vuruşları) ---
@@ -2961,6 +3084,7 @@
       const distToBall = Math.hypot(clientX - ballScreen.x, clientY - ballScreen.y);
 
       // Oyuncu dokunduğu anda öğretici el anında kaybolur
+      tutorialDismissed = true;
       const tutHandEl = document.getElementById('tutorial-hand');
       if (tutHandEl) tutHandEl.style.display = 'none';
 
@@ -3163,6 +3287,43 @@
             if (hit && hit.dist < closestT && hit.dist > 0.05) {
               closestT = hit.dist;
               hitNormX = 1; hitNormZ = 0; didHit = true;
+            }
+          }
+        }
+
+        // 3. Ahşap Kalas / Kiriş Engelleri (Wood Logs)
+        for (let i = 0; i < woodLogs.length; i++) {
+          const log = woodLogs[i];
+          const hw = log.halfW + ballRadius;
+          const hl = log.halfL + ballRadius;
+          const corners = [
+            { lx: -hl, lz: -hw },
+            { lx:  hl, lz: -hw },
+            { lx:  hl, lz:  hw },
+            { lx: -hl, lz:  hw }
+          ].map(p => ({
+            x: log.x + p.lx * log.cosA + p.lz * log.sinA,
+            z: log.z - p.lx * log.sinA + p.lz * log.cosA
+          }));
+
+          for (let e = 0; e < 4; e++) {
+            const pA = corners[e];
+            const pB = corners[(e + 1) % 4];
+            const edx = pB.x - pA.x;
+            const edz = pB.z - pA.z;
+            const eLen = Math.hypot(edx, edz);
+            if (eLen < 0.001) continue;
+            const enx = edz / eLen;
+            const enz = -edx / eLen;
+            const dot = curDx * enx + curDz * enz;
+            if (dot < -0.01) {
+              const hit = intersectAimRaySegment(curX, curZ, curX + curDx * remDist, curZ + curDz * remDist, pA.x, pA.z, pB.x, pB.z);
+              if (hit && hit.dist < closestT && hit.dist > 0.05) {
+                closestT = hit.dist;
+                hitNormX = enx;
+                hitNormZ = enz;
+                didHit = true;
+              }
             }
           }
         }
@@ -3540,7 +3701,7 @@
       return true;
     }
 
-    // --- Yuvarlak Deliğe Giriş & İçine Çekilme Kontrolü (Düşük Hız Kalibrasyonu & Gerçekçi Delik Fiziği) ---
+    // --- Yuvarlak Deliğe Giriş & Gerçekçi Kupa Fiziği ---
     function checkCupEntry(stepDt) {
       if (isInHole || isSinking) return true;
 
@@ -3551,69 +3712,26 @@
       const cupDist = toCup.length();
 
       // Top zemin seviyesine yakın olmalı
-      const isNearTurf = cupDistY < 0.45;
-      if (!isNearTurf) return false;
-
-      // Eğer havadaysa fakat zemin seviyesine çok yakınsa (< 0.25) ve makul putt hızındaysa izin ver
-      if (isAirborne && (curBallSpeed > 3.8 || ballVel.y > 0.8 || cupDistY > 0.25)) {
+      if (cupDistY > 0.28 || (isAirborne && ballVel.y > 0.5)) {
         return false;
       }
 
-      // 1. DÜŞÜK HIZ KALİBRASYONU (v < 2.8 m/s):
-      // Nazik dokunuşlar, kısa putt'lar ve delik kenarından geçen toplar için kusursuz delik çekimi
-      if (curBallSpeed < 2.8) {
-        if (cupDist < 0.80) {
-          const pull = 32.0 * (1.0 - cupDist / 0.80);
-          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
-          ballVel.multiplyScalar(Math.pow(0.92, stepDt * 60));
-        }
-
-        // Topun delik kenarına veya üstüne gelmesi: Doğrudan kupa içine düşer
-        if (cupDist < 0.40 || (curBallSpeed < 1.0 && cupDist < 0.44) || (curBallSpeed < 0.25 && cupDist < 0.48)) {
+      // Kupa yarıçapı = 0.21m, top yarıçapı = 0.12m
+      // Kullanıcı talebi: "top deliğe uzakta olsa bile bazen giriyor bunu düzelt deliğin dibinde bile olsa hızı yavaşsa giremesin kalsın"
+      // Uzaktan yapay çekim (suction) TAMAMEN KALDIRILDI!
+      // SADECE topun merkezi delik boşluğunun içine girdiğinde (cupDist < 0.14m) delik içine düşer.
+      if (cupDist < 0.14) {
+        // Hızlı top delik üzerinden sekip geçer (over-the-lip), sadece makul putt hızında (< 3.6 m/s) içeri düşer
+        if (curBallSpeed < 3.6) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
           isAirborne = false;
           sinkFallVel = 0;
           playHoleIn();
-          setTimeout(showHoleModal, 900);
-          return true;
-        }
-      }
-      // 2. ORTA PUTT HIZI KALİBRASYONU (2.8 <= v < 4.2 m/s):
-      else if (curBallSpeed < 4.2) {
-        if (cupDist < 0.55) {
-          const pull = 20.0 * (1.0 - cupDist / 0.55);
-          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
-          ballVel.multiplyScalar(Math.pow(0.96, stepDt * 60));
-        }
-
-        if (cupDist < 0.32) {
-          isSinking = true;
-          isInHole = true;
-          isMoving = false;
-          isAirborne = false;
-          sinkFallVel = 0;
-          playHoleIn();
-          setTimeout(showHoleModal, 900);
-          return true;
-        }
-      }
-      // 3. HIZLI PUTT KALİBRASYONU (4.2 <= v < 5.0 m/s):
-      else if (curBallSpeed < 5.0) {
-        if (cupDist < 0.40) {
-          const pull = 12.0 * (1.0 - cupDist / 0.40);
-          ballVel.addScaledVector(toCup.clone().normalize(), pull * stepDt);
-        }
-
-        if (cupDist < 0.24) {
-          isSinking = true;
-          isInHole = true;
-          isMoving = false;
-          isAirborne = false;
-          sinkFallVel = 0;
-          playHoleIn();
-          setTimeout(showHoleModal, 900);
+          triggerHaptic('heavy');
+          launchConfetti();
+          setTimeout(showHoleModal, 1100);
           return true;
         }
       }
@@ -3640,20 +3758,26 @@
         });
       }
 
-      // 1. Top Deliğe Girince: Fiziksel olarak yuvarlak deliğin içine düşüp kaybolması
+      // 1. Top Deliğe Girince: Fiziksel olarak siyah yuvarlak deliğin içine düşüp kaybolması (Kullanıcı Talebi)
       if (isSinking) {
-        ballPos.x += (holeCupPos.x - ballPos.x) * 16.0 * dt;
-        ballPos.z += (holeCupPos.z - ballPos.z) * 16.0 * dt;
+        // Top deliğin merkezine doğru yumuşakça odaklanır
+        ballPos.x += (holeCupPos.x - ballPos.x) * 12.0 * dt;
+        ballPos.z += (holeCupPos.z - ballPos.z) * 12.0 * dt;
 
-        sinkFallVel += 14.0 * dt;
+        // Dikey yerçekimi ivmesiyle deliğin dibine doğru düşer (Birden kaybolmaz!)
+        sinkFallVel += 16.0 * dt;
         ballPos.y -= sinkFallVel * dt;
 
-        // Top deliğe girdikçe küçülerek tamamen deliğin içine çekilip kaybolur
-        const curScale = ballMesh.scale.x;
-        const nextScale = Math.max(0, curScale - 3.2 * dt);
-        ballMesh.scale.set(nextScale, nextScale, nextScale);
-        if (nextScale <= 0.05) {
-          ballMesh.visible = false;
+        // Top delik seviyesinin altına (çukurun içine) inene kadar tam boyutunu korur!
+        const cupDepthReached = (holeCupPos.y + ballRadius) - ballPos.y;
+        if (cupDepthReached > 0.12) {
+          // Deliğin derin tabanına ulaştıkça küçülerek siyah derinlikte kaybolur
+          const curScale = ballMesh.scale.x;
+          const nextScale = Math.max(0, curScale - 3.8 * dt);
+          ballMesh.scale.set(nextScale, nextScale, nextScale);
+          if (nextScale <= 0.02) {
+            ballMesh.visible = false;
+          }
         }
         ballShadow.visible = false;
         return;
@@ -3946,18 +4070,22 @@
 
       // Topun Tamamen Durması
       if (!isAirborne && ballVel.length() < 0.18) {
-        // Eğer top delik ağzında veya üzerinde yavaşlayıp duruyorsa doğrudan deliğe düşer
+        // Eğer top delik ağzında durmuşsa:
         const dToCup = Math.hypot(holeCupPos.x - ballPos.x, holeCupPos.z - ballPos.z);
         const dToCupY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
-        if (dToCup < 0.38 && dToCupY < 0.35) {
+        // SADECE ve SADECE top merkezi delik boşluğunun içindeyse (< 0.13m) kupa içine düşer
+        if (dToCup < 0.13 && dToCupY < 0.25) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
           sinkFallVel = 0;
           playHoleIn();
-          setTimeout(showHoleModal, 900);
+          triggerHaptic('heavy');
+          launchConfetti();
+          setTimeout(showHoleModal, 1100);
           return;
         }
+        // Top deliğin dibinde/kenarında olsa bile durur ve yeni vuruş bekler! (Kullanıcı talebi)
         ballVel.set(0, 0, 0);
         isMoving = false;
         lastSafePos.copy(ballPos);
@@ -4184,7 +4312,7 @@
       // Voodoo dinamik öğretici el takip fonksiyonu
       const tutHandEl = document.getElementById('tutorial-hand');
       if (tutHandEl) {
-        if (currentHole === 0 && strokes === 0 && !isMoving && interactionMode === 'NONE') {
+        if (currentHole === 0 && strokes === 0 && !isMoving && interactionMode === 'NONE' && !tutorialDismissed) {
           const ballSc = getBallScreenPos();
           if (ballSc.inFront) {
             tutHandEl.style.display = 'block';
