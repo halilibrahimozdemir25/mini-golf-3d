@@ -427,7 +427,7 @@
     #voodoo-toast {
       display: none;
       position: absolute;
-      top: calc(env(safe-area-inset-top, 0px) + 94px);
+      top: calc(env(safe-area-inset-top, 0px) + 126px);
       left: 50%;
       transform: translateX(-50%) scale(1);
       background: rgba(10, 20, 15, 0.94);
@@ -445,6 +445,50 @@
       white-space: nowrap;
       text-align: center;
       opacity: 0;
+    }
+
+    /* Unit 2: Şalter & Kilit Sub-Navigation Bar */
+    #gate-sub-bar {
+      display: none;
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 88px);
+      left: 50%;
+      transform: translateX(-50%);
+      align-items: center;
+      gap: 5px;
+      background: rgba(8, 20, 14, 0.94);
+      border: 1px solid rgba(0, 255, 136, 0.35);
+      border-radius: 18px;
+      padding: 3px 6px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 12;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      max-width: 96%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .gate-sub-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #9cd3ae;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .gate-sub-tab:active {
+      transform: scale(0.94);
+    }
+    .gate-sub-tab.active {
+      background: linear-gradient(135deg, #00e676, #00a84e);
+      color: #061e0f;
+      font-weight: 800;
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 230, 118, 0.45);
     }
 
     /* Draw-a-Bant Floating Controls (Option 2) */
@@ -525,6 +569,15 @@
     <button class="voodoo-tab" id="tab-gate" onclick="switchVoodooMode('gate')">🔒 1. Şalter & Kilit</button>
     <button class="voodoo-tab" id="tab-draw" onclick="switchVoodooMode('draw')">✏️ 2. Duvar Çiz</button>
     <button class="voodoo-tab" id="tab-portal" onclick="switchVoodooMode('portal')">🌀 3. Portal</button>
+  </div>
+
+  <!-- Şalter & Kilit Seviye Seçim Barı (Unit 2: 5 Handcrafted Levels) -->
+  <div id="gate-sub-bar" style="display:none;">
+    <button class="gate-sub-tab active" id="gate-tab-0" onclick="loadGateHole(0)">1. İlk Şalter</button>
+    <button class="gate-sub-tab" id="gate-tab-1" onclick="loadGateHole(1)">2. Açılı Bant</button>
+    <button class="gate-sub-tab" id="gate-tab-2" onclick="loadGateHole(2)">3. Çifte Kilit</button>
+    <button class="gate-sub-tab" id="gate-tab-3" onclick="loadGateHole(3)">4. Dönen Rotor</button>
+    <button class="gate-sub-tab" id="gate-tab-4" onclick="loadGateHole(4)">5. Zirve 🏆</button>
   </div>
 
   <!-- Dynamic Guidance Toast for Voodoo Mechanics -->
@@ -2295,10 +2348,112 @@
     let currentVoodooMode = 'classic'; // 'classic' | 'gate' | 'draw' | 'portal'
     let voodooToastTimeout = null;
 
-    // Option 1: Trigger & Gate
+    // Option 1: Trigger & Gate (Unit 2: 5 Handcrafted Levels)
+    let currentGateHole = 0;
     let targetSwitches = [];
     let cupShieldGate = null;
     let isCupLocked = false;
+    let energyConduits = [];
+    let sparkParticles = [];
+
+    function createSparkBurst(x, y, z, color = 0x00ff88) {
+      const pCount = 14;
+      const geom = new THREE.SphereGeometry(0.04, 6, 6);
+      const mat = new THREE.MeshBasicMaterial({ color: color });
+      for (let i = 0; i < pCount; i++) {
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.position.set(x, y, z);
+        courseGroup.add(mesh);
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 0.5;
+        const speed = 2.5 + Math.random() * 3.5;
+        sparkParticles.push({
+          mesh: mesh,
+          vel: new THREE.Vector3(
+            Math.cos(theta) * Math.cos(phi) * speed,
+            Math.sin(phi) * speed + 1.2,
+            Math.sin(theta) * Math.cos(phi) * speed
+          ),
+          life: 0.35,
+          maxLife: 0.35
+        });
+      }
+    }
+
+    function updateSparks(dt) {
+      for (let i = sparkParticles.length - 1; i >= 0; i--) {
+        const p = sparkParticles[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
+          sparkParticles.splice(i, 1);
+        } else {
+          p.vel.y -= 9.8 * dt;
+          p.mesh.position.addScaledVector(p.vel, dt);
+          const s = Math.max(0.1, p.life / p.maxLife);
+          p.mesh.scale.set(s, s, s);
+        }
+      }
+    }
+
+    function addEnergyConduit(points, switchRef) {
+      const group = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x551122,
+        emissive: 0xcc2233,
+        emissiveIntensity: 0.7,
+        roughness: 0.25,
+        metalness: 0.6
+      });
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const dx = p2.x - p1.x;
+        const dz = p2.z - p1.z;
+        const len = Math.hypot(dx, dz);
+        const angle = Math.atan2(dx, dz);
+        const midX = (p1.x + p2.x) * 0.5;
+        const midZ = (p1.z + p2.z) * 0.5;
+
+        // Ground ribbon strip
+        const geo = new THREE.BoxGeometry(0.12, 0.018, len);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(midX, 0.11, midZ);
+        mesh.rotation.y = angle;
+        group.add(mesh);
+      }
+
+      // Small glowing circular junction nodes
+      points.forEach(p => {
+        const nodeGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.022, 12);
+        const nodeMesh = new THREE.Mesh(nodeGeo, mat);
+        nodeMesh.position.set(p.x, 0.112, p.z);
+        group.add(nodeMesh);
+      });
+
+      courseGroup.add(group);
+
+      const conduit = {
+        group,
+        mat,
+        switchRef,
+        isActivated: false
+      };
+      energyConduits.push(conduit);
+      return conduit;
+    }
+
+    function activateEnergyConduit(sw) {
+      energyConduits.forEach(c => {
+        if (c.switchRef === sw) {
+          c.isActivated = true;
+          c.mat.color.setHex(0x00ffcc);
+          c.mat.emissive.setHex(0x00ff88);
+          c.mat.emissiveIntensity = 1.6;
+        }
+      });
+    }
 
     // Option 2: Draw-a-Bant
     let drawnWalls = [];
@@ -2334,45 +2489,53 @@
       group.position.set(x, y, z);
       group.rotation.y = facingAngle;
 
-      // Base bracket
-      const baseGeo = new THREE.CylinderGeometry(0.55, 0.60, 0.08, 16);
-      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1f242d, roughness: 0.4, metalness: 0.8 });
+      // Heavy chamfered metallic base
+      const baseGeo = new THREE.CylinderGeometry(0.55, 0.62, 0.08, 20);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1b2028, roughness: 0.35, metalness: 0.85 });
       const baseMesh = new THREE.Mesh(baseGeo, baseMat);
       baseMesh.position.y = 0.04;
       group.add(baseMesh);
 
-      // Neon rim
-      const rimGeo = new THREE.TorusGeometry(0.52, 0.045, 8, 24);
+      // Outer glowing neon rim
+      const rimGeo = new THREE.TorusGeometry(0.53, 0.045, 8, 24);
       rimGeo.rotateX(Math.PI * 0.5);
       const rimMat = new THREE.MeshStandardMaterial({
         color: 0xff2a44,
         emissive: 0xff1122,
-        emissiveIntensity: 0.9,
+        emissiveIntensity: 0.95,
         roughness: 0.2
       });
       const rimMesh = new THREE.Mesh(rimGeo, rimMat);
       rimMesh.position.y = 0.08;
       group.add(rimMesh);
 
-      // Spring-loaded target button
-      const btnGeo = new THREE.CylinderGeometry(0.38, 0.40, 0.16, 16);
+      // Spring-loaded target push button
+      const btnGeo = new THREE.CylinderGeometry(0.38, 0.40, 0.16, 20);
       const btnMat = new THREE.MeshStandardMaterial({
         color: 0xff3b30,
         emissive: 0xff2233,
-        emissiveIntensity: 0.6,
-        roughness: 0.3
+        emissiveIntensity: 0.65,
+        roughness: 0.25
       });
       const btnMesh = new THREE.Mesh(btnGeo, btnMat);
       btnMesh.position.y = 0.14;
       group.add(btnMesh);
 
-      // Floating target ring
-      const iconGeo = new THREE.RingGeometry(0.12, 0.24, 16);
+      // Floating holographic target chevron/ring
+      const iconGeo = new THREE.RingGeometry(0.12, 0.24, 20);
       iconGeo.rotateX(-Math.PI * 0.5);
       const iconMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
       const iconMesh = new THREE.Mesh(iconGeo, iconMat);
       iconMesh.position.y = 0.23;
       group.add(iconMesh);
+
+      // Floating holographic lightning chevron icon
+      const holoGeo = new THREE.ConeGeometry(0.09, 0.18, 4);
+      holoGeo.rotateX(Math.PI);
+      const holoMat = new THREE.MeshBasicMaterial({ color: 0xffdd44, wireframe: true });
+      const holoMesh = new THREE.Mesh(holoGeo, holoMat);
+      holoMesh.position.y = 0.55;
+      group.add(holoMesh);
 
       courseGroup.add(group);
 
@@ -2383,13 +2546,18 @@
         group,
         rimMat,
         btnMat,
-        btnMesh
+        btnMesh,
+        iconMesh,
+        holoMesh,
+        springY: 0.14,
+        springTargetY: 0.14,
+        springVel: 0
       };
       targetSwitches.push(sw);
       return sw;
     }
 
-    function addCupShieldGate(pos) {
+    function addCupShieldGate(pos, requiredSwitches = 1) {
       const group = new THREE.Group();
       group.position.copy(pos);
 
@@ -2432,6 +2600,24 @@
       const bodyMesh = new THREE.Mesh(bodyGeo, lockMat);
       lockGroup.add(bodyMesh);
 
+      // Indicator LEDs on the lock body for multi-switch requirements
+      const leds = [];
+      if (requiredSwitches > 1) {
+        for (let i = 0; i < requiredSwitches; i++) {
+          const ledGeo = new THREE.SphereGeometry(0.028, 12, 12);
+          const ledMat = new THREE.MeshStandardMaterial({
+            color: 0xff2233,
+            emissive: 0xff1122,
+            emissiveIntensity: 1.2
+          });
+          const ledMesh = new THREE.Mesh(ledGeo, ledMat);
+          const offsetX = (i - (requiredSwitches - 1) * 0.5) * 0.09;
+          ledMesh.position.set(offsetX, 0, 0.055);
+          lockGroup.add(ledMesh);
+          leds.push({ mesh: ledMesh, mat: ledMat });
+        }
+      }
+
       group.add(lockGroup);
       courseGroup.add(group);
 
@@ -2442,10 +2628,42 @@
         domeMat,
         domeMesh,
         lockGroup,
+        shackleMesh,
+        leds,
+        requiredSwitches,
         shattering: false
       };
       isCupLocked = true;
       return cupShieldGate;
+    }
+
+    function checkSwitchesAndUnlock(triggeredSwitch) {
+      if (triggeredSwitch) {
+        activateEnergyConduit(triggeredSwitch);
+        createSparkBurst(triggeredSwitch.x, triggeredSwitch.y + 0.18, triggeredSwitch.z, 0x00ff88);
+      }
+
+      const activeCount = targetSwitches.filter(s => s.isTriggered).length;
+      const totalCount = targetSwitches.length;
+
+      // Update LED indicators on lock
+      if (cupShieldGate && cupShieldGate.leds && cupShieldGate.leds.length > 0) {
+        for (let i = 0; i < cupShieldGate.leds.length; i++) {
+          if (i < activeCount) {
+            cupShieldGate.leds[i].mat.color.setHex(0x00ff88);
+            cupShieldGate.leds[i].mat.emissive.setHex(0x00ff66);
+            cupShieldGate.leds[i].mat.emissiveIntensity = 2.0;
+          }
+        }
+      }
+
+      if (activeCount >= totalCount) {
+        unlockCupGate();
+      } else {
+        playSwitchTrigger();
+        triggerHaptic('medium');
+        showVoodooToast(`⚡ Şalter [${activeCount}/${totalCount}] Aktif! Diğerini Vur! 🔒`, 3500);
+      }
     }
 
     function unlockCupGate() {
@@ -2454,7 +2672,7 @@
       isCupLocked = false;
       playGateOpen();
       triggerHaptic('heavy');
-      showVoodooToast("🔓 KİLİT AÇILDI! ŞİMDİ DELİĞE VUR! ⛳", 4000);
+      showVoodooToast("🔓 TÜM ŞALTERLER AÇILDI! ŞİMDİ DELİĞE VUR! ⛳", 4000);
 
       let elapsed = 0;
       const interval = setInterval(() => {
@@ -2464,6 +2682,9 @@
         cupShieldGate.domeMat.opacity = Math.max(0, 0.54 - elapsed * 1.6);
         cupShieldGate.lockGroup.position.y += 0.06;
         cupShieldGate.lockGroup.scale.multiplyScalar(0.91);
+        if (cupShieldGate.shackleMesh) {
+          cupShieldGate.shackleMesh.rotation.y += 0.15;
+        }
         if (elapsed >= 0.35) {
           clearInterval(interval);
           if (cupShieldGate && cupShieldGate.group.parent) {
@@ -2623,6 +2844,11 @@
       const activeTab = document.getElementById('tab-' + mode);
       if (activeTab) activeTab.classList.add('active');
 
+      const gateSubBar = document.getElementById('gate-sub-bar');
+      if (gateSubBar) {
+        gateSubBar.style.display = (mode === 'gate') ? 'flex' : 'none';
+      }
+
       const drawPanel = document.getElementById('draw-wall-panel');
       if (drawPanel) {
         drawPanel.style.display = (mode === 'draw') ? 'flex' : 'none';
@@ -2632,7 +2858,7 @@
         buildCourse(currentHole);
         showVoodooToast("⛳ Klasik Seviye 1-10", 2500);
       } else if (mode === 'gate') {
-        loadShowcaseGate();
+        loadGateHole(currentGateHole);
       } else if (mode === 'draw') {
         loadShowcaseDraw();
       } else if (mode === 'portal') {
@@ -2640,54 +2866,13 @@
       }
     }
 
-    // Showcase 1: Trigger & Gate
-    function loadShowcaseGate() {
-      while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
-      colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
-      speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
-      icePatches = []; jumpRamps = []; floorMeshes = [];
-      targetSwitches = []; cupShieldGate = null; isCupLocked = false;
-      drawnWalls = []; isDrawingWall = false;
-      if (drawPreviewMesh) drawPreviewMesh.visible = false;
-      portalPairs = [];
+    // ==========================================
+    // UNIT 2: ŞALTER & KİLİT (5 HANDCRAFTED LEVELS)
+    // ==========================================
 
-      holeCupPos.set(0, 0.1, 6.0);
-      ballPos.set(0, 0.22, -6.0);
-      lastSafePos.copy(ballPos);
-      ballVel.set(0, 0, 0);
-      isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
-      sinkFallVel = 0; strokes = 0;
-      ballMesh.scale.set(1, 1, 1);
-      ballMesh.rotation.set(0, 0, 0);
-      ballMesh.visible = true;
-
-      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
-      const activeTabGate = document.getElementById('tab-gate');
-      if (activeTabGate) activeTabGate.classList.add('active');
-      const tutHandGate = document.getElementById('tutorial-hand');
-      if (tutHandGate) tutHandGate.style.display = 'none';
-      const drawPanelGate = document.getElementById('draw-wall-panel');
-      if (drawPanelGate) drawPanelGate.style.display = 'none';
-      updateHUD();
-      document.getElementById('gameover-modal').style.display = 'none';
-      document.getElementById('modal').style.display = 'none';
-
-      buildShowcaseGateCourse();
-      buildCupAndFlag(holeCupPos);
-      scene.updateMatrixWorld(true);
-
-      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, -6.0) ?? 0.0;
-      lastGroundY = initGroundY;
-      ballPos.y = initGroundY + ballRadius;
-      lastSafePos.copy(ballPos);
-
-      camYaw = 0;
-      camPitch = 0.42;
-      showVoodooToast("🔒 Önce Kırmızı Şalteri Vur, Kilidi Aç!", 4000);
-    }
-
-    function buildShowcaseGateCourse() {
-      addFloorWithCupHole(0, 0, 0, 4.4, 0.2, 15, 0, 6.0, 0.21);
+    function buildGateHole1() {
+      // 1. İlk Şalter (Tutorial / Temel Şalter & Kilit)
+      addFloorWithCupHole(0, 0, 0, 4.4, 0.2, 15.0, 0, 6.0, 0.21);
       addWall(-2.32, 0.29, 0, 0.26, 0.58, 15.5);
       addWall(2.32, 0.29, 0, 0.26, 0.58, 15.5);
       addWall(0, 0.18, -7.62, 4.38, 0.36, 0.26);
@@ -2701,10 +2886,266 @@
       addWoodLog(0, 0.10, 1.0, 2.4, 0.34, 0);
 
       // Sağ tarafta mekanik hedef şalteri
-      addTargetSwitch(1.40, 0.10, -1.2, 0);
+      const sw1 = addTargetSwitch(1.40, 0.10, -1.2, 0);
+
+      // Şalterden kalkan kubbesine uzanan neon enerji kablosu
+      addEnergyConduit([
+        { x: 1.40, z: -1.20 },
+        { x: 1.85, z: 1.00 },
+        { x: 1.85, z: 4.80 },
+        { x: 0.00, z: 6.00 }
+      ], sw1);
 
       // Deliği koruyan kırmızı enerji kalkanı kubbesi
-      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0));
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0), 1);
+    }
+
+    function buildGateHole2() {
+      // 2. Açılı Bant & Şalter (Trickshot Rebound Açısı)
+      addFloorWithCupHole(0, 0, 0, 4.8, 0.2, 15.0, 0, 6.0, 0.21);
+      addWall(-2.52, 0.29, 0, 0.26, 0.58, 15.5);
+      addWall(2.52, 0.29, 0, 0.26, 0.58, 15.5);
+      addWall(0, 0.18, -7.62, 4.78, 0.36, 0.26);
+      addWall(0, 0.29, 7.62, 4.78, 0.58, 0.26);
+      addCornerWedge(-2.39, 7.49, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(2.39, 7.49, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-2.39, -7.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.39, -7.49, -1, 1, 0.75, 0.18, 0.36);
+
+      // Sol şalteri doğrudan düz vuruştan koruyan ahşap engel
+      addWoodLog(-0.8, 0.10, -1.5, 2.0, 0.34, 0);
+
+      // Sağ duvarda stratejik 45 derece sekme tamponu (Banttan şaltere sekme)
+      addBumper(2.05, 0.10, -1.0, 0.44);
+
+      // Sol nişte yer alan hedef şalter
+      const sw1 = addTargetSwitch(-1.60, 0.10, 1.2, 0);
+
+      // Şalterin arkasında topu deliğe doğru yönlendiren ileri bant tamponu
+      addBumper(-2.0, 0.10, 3.2, 0.40);
+
+      // Enerji iletim kablosu
+      addEnergyConduit([
+        { x: -1.60, z: 1.20 },
+        { x: -2.00, z: 3.50 },
+        { x: -2.00, z: 5.50 },
+        { x: 0.00, z: 6.00 }
+      ], sw1);
+
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0), 1);
+    }
+
+    function buildGateHole3() {
+      // 3. Çifte Kilit (Dual Switch Puzzle - Her iki şalteri de aktif et!)
+      // Alt kalkış koridoru
+      addFloor(0, 0, -4.2, 4.4, 0.2, 6.4);
+      addWall(-2.32, 0.29, -4.2, 0.26, 0.58, 6.6);
+      addWall(2.32, 0.29, -4.2, 0.26, 0.58, 6.6);
+      addWall(0, 0.18, -7.42, 4.38, 0.36, 0.26);
+      addCornerWedge(-2.19, -7.29, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.19, -7.29, -1, 1, 0.75, 0.18, 0.36);
+
+      // Üst çift kanatlı arena
+      addFloorWithCupHole(0, 0, 3.2, 7.6, 0.2, 8.4, 0, 6.2, 0.21);
+      addWall(-3.92, 0.29, 3.2, 0.26, 0.58, 8.6);
+      addWall(3.92, 0.29, 3.2, 0.26, 0.58, 8.6);
+      addWall(-3.12, 0.29, -1.0, 1.45, 0.58, 0.26);
+      addWall(3.12, 0.29, -1.0, 1.45, 0.58, 0.26);
+      addWall(0, 0.29, 7.42, 7.6, 0.58, 0.26);
+      addCornerWedge(-3.79, 7.29, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(3.79, 7.29, -1, -1, 0.75, 0.29, 0.58);
+
+      // Merkez yönlendirici sütun
+      addBumper(0, 0.10, 1.4, 0.48);
+
+      // İki ayrı şalter (İkisi de vurulmalı!)
+      const sw1 = addTargetSwitch(-2.6, 0.10, 1.8, 0);
+      const sw2 = addTargetSwitch(2.6, 0.10, 1.8, 0);
+
+      // Çift neon enerji hatları
+      addEnergyConduit([
+        { x: -2.60, z: 1.80 },
+        { x: -3.40, z: 3.50 },
+        { x: -3.40, z: 5.60 },
+        { x: 0.00, z: 6.20 }
+      ], sw1);
+
+      addEnergyConduit([
+        { x: 2.60, z: 1.80 },
+        { x: 3.40, z: 3.50 },
+        { x: 3.40, z: 5.60 },
+        { x: 0.00, z: 6.20 }
+      ], sw2);
+
+      // 2 şalter gerektiren kilit kubbesi (Kilitte 2 LED göstergesi)
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.2), 2);
+    }
+
+    function buildGateHole4() {
+      // 4. Dönen Rotor & Şalter (Zamanlama ve Dinamik Engel)
+      addFloorWithCupHole(0, 0, 0, 4.8, 0.2, 16.0, 0, 6.5, 0.21);
+      addWall(-2.52, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(2.52, 0.29, 0, 0.26, 0.58, 16.5);
+      addWall(0, 0.18, -8.12, 4.78, 0.36, 0.26);
+      addWall(0, 0.29, 8.12, 4.78, 0.58, 0.26);
+      addCornerWedge(-2.39, 7.99, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(2.39, 7.99, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-2.39, -7.99, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.39, -7.99, -1, 1, 0.75, 0.18, 0.36);
+
+      // Merkezde dönen ahşap pervane rotor
+      addRotor(0, 0.18, -1.0);
+
+      // Yan koruma ahşap kirişleri
+      addWoodLog(-1.65, 0.10, 0.6, 1.1, 0.34, 0);
+      addWoodLog(1.65, 0.10, 0.6, 1.1, 0.34, 0);
+
+      // Rotorun tam arkasında hedef şalter
+      const sw1 = addTargetSwitch(0, 0.10, 2.0, 0);
+
+      // Enerji kablosu
+      addEnergyConduit([
+        { x: 0.00, z: 2.00 },
+        { x: 1.20, z: 3.50 },
+        { x: 1.20, z: 5.20 },
+        { x: 0.00, z: 6.50 }
+      ], sw1);
+
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.5), 1);
+    }
+
+    function buildGateHole5() {
+      // 5. Şalter Zirvesi (Final - Hızlandırıcı + Kum + Çifte Kilit)
+      // Alt kalkış pisti
+      addFloor(0, 0, -4.3, 5.2, 0.2, 6.6);
+      addWall(-2.72, 0.29, -4.3, 0.26, 0.58, 6.8);
+      addWall(2.72, 0.29, -4.3, 0.26, 0.58, 6.8);
+      addWall(0, 0.18, -7.62, 5.18, 0.36, 0.26);
+      addCornerWedge(-2.59, -7.49, 1, 1, 0.75, 0.18, 0.36);
+      addCornerWedge(2.59, -7.49, -1, 1, 0.75, 0.18, 0.36);
+
+      // 1. Şalter (Alt katta sol nişte)
+      const sw1 = addTargetSwitch(-1.8, 0.10, -3.2, 0);
+      // Sağ bant tamponu ile şaltere sekme imkanı
+      addBumper(1.8, 0.10, -3.2, 0.44);
+
+      // Orta Hızlanma Koridoru
+      addFloor(0, 0, 0.6, 4.4, 0.2, 3.4);
+      addWall(-2.32, 0.29, 0.6, 0.26, 0.58, 3.6);
+      addWall(2.32, 0.29, 0.6, 0.26, 0.58, 3.6);
+
+      // Hızlandırıcı şerit
+      addBooster(0, 0.10, 0.6, 2.0, 2.4, 22);
+
+      // Hızlandırıcı yanlarındaki kum engelleri
+      addSand(-1.5, 0.10, 0.6, 0.9, 2.4);
+      addSand(1.5, 0.10, 0.6, 0.9, 2.4);
+
+      // Üst Zirve Yeşil Alanı
+      addFloorWithCupHole(0, 0, 5.2, 5.6, 0.2, 6.0, 0, 6.5, 0.21);
+      addWall(-2.92, 0.29, 5.2, 0.26, 0.58, 6.2);
+      addWall(2.92, 0.29, 5.2, 0.26, 0.58, 6.2);
+      addWall(-2.62, 0.29, 2.2, 0.64, 0.58, 0.26);
+      addWall(2.62, 0.29, 2.2, 0.64, 0.58, 0.26);
+      addWall(0, 0.29, 8.22, 5.6, 0.58, 0.26);
+      addCornerWedge(-2.79, 8.09, 1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(2.79, 8.09, -1, -1, 0.75, 0.29, 0.58);
+
+      // 2. Şalter (Üst katta sağ nişte)
+      const sw2 = addTargetSwitch(1.9, 0.10, 4.2, 0);
+
+      // Enerji devre hatları
+      addEnergyConduit([
+        { x: -1.80, z: -3.20 },
+        { x: -2.00, z: -1.00 },
+        { x: -2.00, z: 2.50 },
+        { x: -2.00, z: 5.50 },
+        { x: 0.00, z: 6.50 }
+      ], sw1);
+
+      addEnergyConduit([
+        { x: 1.90, z: 4.20 },
+        { x: 2.20, z: 5.50 },
+        { x: 0.00, z: 6.50 }
+      ], sw2);
+
+      // 2 şalter gerektiren kilit kubbesi
+      addCupShieldGate(new THREE.Vector3(0, 0.1, 6.5), 2);
+    }
+
+    const gateLevels = [
+      { id: 1, name: "1. İlk Şalter", par: 2, spawn: new THREE.Vector3(0, 0.22, -6.0), cup: new THREE.Vector3(0, 0.1, 6.0), build: buildGateHole1 },
+      { id: 2, name: "2. Açılı Bant & Şalter", par: 2, spawn: new THREE.Vector3(0, 0.22, -6.0), cup: new THREE.Vector3(0, 0.1, 6.0), build: buildGateHole2 },
+      { id: 3, name: "3. Çifte Kilit", par: 3, spawn: new THREE.Vector3(0, 0.22, -6.0), cup: new THREE.Vector3(0, 0.1, 6.2), build: buildGateHole3 },
+      { id: 4, name: "4. Dönen Rotor & Şalter", par: 3, spawn: new THREE.Vector3(0, 0.22, -6.5), cup: new THREE.Vector3(0, 0.1, 6.5), build: buildGateHole4 },
+      { id: 5, name: "5. Şalter Zirvesi", par: 3, spawn: new THREE.Vector3(0, 0.22, -6.5), cup: new THREE.Vector3(0, 0.1, 6.5), build: buildGateHole5 }
+    ];
+    window.gateLevels = gateLevels;
+    window.loadGateHole = loadGateHole;
+
+    function loadGateHole(idx) {
+      if (idx < 0 || idx >= gateLevels.length) idx = 0;
+      currentGateHole = idx;
+
+      while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
+      colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
+      speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
+      icePatches = []; jumpRamps = []; floorMeshes = [];
+      targetSwitches = []; cupShieldGate = null; isCupLocked = false;
+      energyConduits = []; sparkParticles = [];
+      drawnWalls = []; isDrawingWall = false;
+      if (drawPreviewMesh) drawPreviewMesh.visible = false;
+      portalPairs = [];
+
+      const data = gateLevels[idx];
+      holeCupPos.copy(data.cup);
+      ballPos.copy(data.spawn);
+      lastSafePos.copy(data.spawn);
+      ballVel.set(0, 0, 0);
+      isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
+      sinkFallVel = 0; strokes = 0;
+      ballMesh.scale.set(1, 1, 1);
+      ballMesh.rotation.set(0, 0, 0);
+      ballMesh.visible = true;
+
+      // Update UI tabs
+      document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
+      const activeTabGate = document.getElementById('tab-gate');
+      if (activeTabGate) activeTabGate.classList.add('active');
+
+      const gateSubBar = document.getElementById('gate-sub-bar');
+      if (gateSubBar) {
+        gateSubBar.style.display = 'flex';
+        document.querySelectorAll('.gate-sub-tab').forEach(t => t.classList.remove('active'));
+        const activeSubTab = document.getElementById(`gate-tab-${idx}`);
+        if (activeSubTab) activeSubTab.classList.add('active');
+      }
+
+      const tutHandGate = document.getElementById('tutorial-hand');
+      if (tutHandGate) tutHandGate.style.display = 'none';
+      const drawPanelGate = document.getElementById('draw-wall-panel');
+      if (drawPanelGate) drawPanelGate.style.display = 'none';
+
+      updateHUD();
+      document.getElementById('gameover-modal').style.display = 'none';
+      document.getElementById('modal').style.display = 'none';
+
+      data.build();
+      buildCupAndFlag(holeCupPos);
+      scene.updateMatrixWorld(true);
+
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, data.spawn.y - ballRadius) ?? 0.0;
+      lastGroundY = initGroundY;
+      ballPos.y = initGroundY + ballRadius;
+      lastSafePos.copy(ballPos);
+
+      camYaw = 0;
+      camPitch = 0.44;
+      showVoodooToast(`🔒 Bölüm ${idx + 1}: ${data.name.replace(/^\d+\.\s*/, '')}`, 3500);
+    }
+
+    function loadShowcaseGate() {
+      loadGateHole(currentGateHole);
     }
 
     // Showcase 2: Draw-a-Bant
@@ -3290,6 +3731,10 @@
       courseGroup.add(mesh);
       speedBoosters.push({
         box: new THREE.Box3().setFromObject(mesh),
+        x: x,
+        z: z,
+        halfW: w * 0.5,
+        halfD: d * 0.5,
         dir: new THREE.Vector3(0, 0, 1),
         speed: speed
       });
@@ -3905,7 +4350,7 @@
     function onPointerDown(e) {
       initAudio();
       if (isMoving || isInHole) return;
-      if (e.target && e.target.closest && e.target.closest('#hud, #voodoo-mode-bar, #draw-wall-panel, #modal, #gameover-modal')) {
+      if (e.target && e.target.closest && e.target.closest('#hud, #voodoo-mode-bar, #gate-sub-bar, #draw-wall-panel, #modal, #gameover-modal')) {
         return;
       }
 
@@ -4524,9 +4969,10 @@
         document.getElementById('hole-name').innerText = h.name.replace(/^\d+\.\s*/, '');
         document.getElementById('par-badge').innerText = `PAR ${h.par}`;
       } else if (currentVoodooMode === 'gate') {
-        document.getElementById('hole-num').innerText = "1";
-        document.getElementById('hole-name').innerText = "Şalter & Kilit";
-        document.getElementById('par-badge').innerText = "PAR 2";
+        const gh = gateLevels[currentGateHole];
+        document.getElementById('hole-num').innerText = currentGateHole + 1;
+        document.getElementById('hole-name').innerText = gh.name.replace(/^\d+\.\s*/, '');
+        document.getElementById('par-badge').innerText = `PAR ${gh.par}`;
       } else if (currentVoodooMode === 'draw') {
         document.getElementById('hole-num').innerText = "2";
         document.getElementById('hole-name').innerText = "Duvar Çiz";
@@ -5040,11 +5486,12 @@
               sw.rimMat.emissive.setHex(0x00cc66);
               sw.btnMat.color.setHex(0x00e676);
               sw.btnMat.emissive.setHex(0x00b34d);
-              sw.btnMesh.position.y = 0.06;
+              sw.btnMesh.position.y = 0.05;
+              if (sw.holoMesh) {
+                sw.holoMesh.material.color.setHex(0x00ff88);
+              }
 
-              playSwitchTrigger();
-              triggerHaptic('medium');
-              unlockCupGate();
+              checkSwitchesAndUnlock(sw);
             }
           }
         });
@@ -5188,6 +5635,18 @@
               ballVel.multiplyScalar(Math.pow(0.915, subDt * 60));
             }
           });
+
+          // Hızlandırıcı Bantlar (Speed Boosters)
+          speedBoosters.forEach(b => {
+            if (Math.abs(ballPos.x - b.x) <= b.halfW && Math.abs(ballPos.z - b.z) <= b.halfD) {
+              ballVel.x += b.dir.x * b.speed * subDt * 2.5;
+              ballVel.z += b.dir.z * b.speed * subDt * 2.5;
+              if (!b.soundTimer || performance.now() - b.soundTimer > 350) {
+                playBumper();
+                b.soundTimer = performance.now();
+              }
+            }
+          });
         }
       }
 
@@ -5304,7 +5763,12 @@
       const title = document.getElementById('modal-title');
       const stars = document.getElementById('modal-stars');
       const score = document.getElementById('modal-score');
-      const par = holes[currentHole].par;
+      let par = 2;
+      if (currentVoodooMode === 'classic') {
+        par = holes[currentHole].par;
+      } else if (currentVoodooMode === 'gate') {
+        par = gateLevels[currentGateHole].par;
+      }
       const diff = strokes - par;
 
       if (strokes === 1) {
@@ -5322,12 +5786,15 @@
       }
 
       if (currentVoodooMode === 'classic') {
-        const par = holes[currentHole].par;
         score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})`;
         document.getElementById('next-btn').innerText = (currentHole === holes.length - 1) ? "ŞAMPİYONSUN! BAŞTAN OYNA 🏆" : "SONRAKİ DELİK ➡️";
       } else if (currentVoodooMode === 'gate') {
-        score.innerText = `${strokes} Vuruşta Tamamlandı! Şalter & Kilit Mekaniği Başarılı!`;
-        document.getElementById('next-btn').innerText = "SONRAKİ MEKANİK: DUVAR ÇİZ ✏️";
+        score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})! Şalter & Kilit Başarılı! ⚡`;
+        if (currentGateHole < gateLevels.length - 1) {
+          document.getElementById('next-btn').innerText = `SONRAKİ BÖLÜM (${currentGateHole + 2}/${gateLevels.length}) ➡️`;
+        } else {
+          document.getElementById('next-btn').innerText = "ŞALTER ÜNİTESİ BİTTİ! TEBRİKLER 🏆";
+        }
       } else if (currentVoodooMode === 'draw') {
         score.innerText = `${strokes} Vuruşta Tamamlandı! Kendi Duvarını Çizdin & Başardın!`;
         document.getElementById('next-btn').innerText = "SONRAKİ MEKANİK: PORTAL 🌀";
@@ -5344,7 +5811,14 @@
         currentHole = (currentHole + 1) % holes.length;
         buildCourse(currentHole);
       } else if (currentVoodooMode === 'gate') {
-        switchVoodooMode('draw');
+        if (currentGateHole < gateLevels.length - 1) {
+          currentGateHole++;
+          loadGateHole(currentGateHole);
+        } else {
+          currentGateHole = 0;
+          loadGateHole(currentGateHole);
+          showVoodooToast("🏆 Şalter Ünitesini Tamamladın! 1. Bölümden Tekrar Başlandı.", 4000);
+        }
       } else if (currentVoodooMode === 'draw') {
         switchVoodooMode('portal');
       } else if (currentVoodooMode === 'portal') {
@@ -5450,6 +5924,42 @@
         ballRing.visible = false;
       }
 
+      // Şalter, Kalkan, Enerji Kabloları ve Kıvılcım Görsel Animasyonları
+      updateSparks(dt);
+
+      if (cupShieldGate && !cupShieldGate.shattering) {
+        if (cupShieldGate.lockGroup) {
+          cupShieldGate.lockGroup.position.y = 0.95 + Math.sin(gameElapsedTime * 3.5) * 0.05;
+        }
+        if (cupShieldGate.domeMat) {
+          cupShieldGate.domeMat.emissiveIntensity = 0.65 + Math.sin(gameElapsedTime * 4.0) * 0.20;
+        }
+      }
+
+      targetSwitches.forEach(sw => {
+        if (!sw.isTriggered) {
+          if (sw.holoMesh) {
+            sw.holoMesh.rotation.y += dt * 2.0;
+            sw.holoMesh.position.y = 0.55 + Math.sin(gameElapsedTime * 3.0) * 0.04;
+          }
+          if (sw.iconMesh) {
+            sw.iconMesh.rotation.z += dt * 1.5;
+          }
+        } else {
+          if (sw.holoMesh) {
+            sw.holoMesh.rotation.y += dt * 4.0;
+          }
+        }
+      });
+
+      energyConduits.forEach(conduit => {
+        if (conduit.isActivated) {
+          conduit.mat.emissiveIntensity = 1.2 + Math.sin(gameElapsedTime * 8.0) * 0.35;
+        } else {
+          conduit.mat.emissiveIntensity = 0.55 + Math.sin(gameElapsedTime * 3.0) * 0.20;
+        }
+      });
+
       // Nişan alma anında akıcı ve canlı enerji nabzı animasyonu
       if (interactionMode === 'SLINGSHOT' && powerRatio > 0) {
         updateAimVisuals();
@@ -5509,17 +6019,24 @@
       window.testResults = [];
       function runVoodooTests() {
         try {
-          // Test 1: Gate & Switch
+          // Test 1: Gate & Switch Unit (5 Levels Verification)
           switchVoodooMode('gate');
-          if (targetSwitches.length !== 1) throw new Error("Gate mode switch missing");
-          if (!isCupLocked) throw new Error("Cup should be locked initially");
+          if (gateLevels.length !== 5) throw new Error("Gate levels count not 5");
+          for (let g = 0; g < 5; g++) {
+            loadGateHole(g);
+            if (targetSwitches.length < 1) throw new Error(`Gate hole ${g+1} missing switches`);
+            if (!isCupLocked) throw new Error(`Gate hole ${g+1} cup should be locked initially`);
+            if (getGroundHeight(ballPos.x, ballPos.z) === null) throw new Error(`Gate hole ${g+1} ball spawn not on floor`);
+          }
+          // Test hit on Hole 1
+          loadGateHole(0);
           const sw = targetSwitches[0];
           ballPos.set(sw.x, 0.22, sw.z);
           ballVel.set(0, 0, 1); isMoving = true;
           updatePhysics(0.016);
           if (!sw.isTriggered) throw new Error("Switch failed to trigger on ball hit");
           if (isCupLocked) throw new Error("Cup should be unlocked after switch hit");
-          window.testResults.push("TEST 1 (Gate & Switch): PASSED");
+          window.testResults.push("TEST 1 (Gate & Switch 5 Levels): PASSED");
 
           // Test 2: Draw-a-Bant
           switchVoodooMode('draw');
