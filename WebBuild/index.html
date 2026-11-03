@@ -4756,13 +4756,15 @@
         return false;
       }
 
-      // Kupa yarıçapı = 0.21m, top yarıçapı = 0.12m
-      // Kullanıcı talebi: "top deliğe uzakta olsa bile bazen giriyor bunu düzelt deliğin dibinde bile olsa hızı yavaşsa giremesin kalsın"
-      // Uzaktan yapay çekim (suction) TAMAMEN KALDIRILDI!
-      // SADECE topun merkezi delik boşluğunun içine girdiğinde (cupDist < 0.14m) delik içine düşer.
-      if (cupDist < 0.14) {
-        // Hızlı top delik üzerinden sekip geçer (over-the-lip), sadece makul putt hızında (< 3.6 m/s) içeri düşer
-        if (curBallSpeed < 3.6) {
+      // Kupa delik yarıçapı = 0.21m, top yarıçapı = 0.12m
+      // Hassas Ağırlık Merkezi Kalibrasyonu:
+      // Topun ağırlık merkezi (merkez noktası) delik boşluğunun içine girdiğinde (cupDist <= 0.20m),
+      // zemin desteği biter ve top deliğe düşer.
+      // Top deliğin dışındayken (cupDist > 0.20m) ASLA yapay çekim uygulanmaz, zeminde kalır.
+      if (cupDist <= 0.20) {
+        // Hızlı top delik üzerinden sekip geçer (lip-out), sadece makul putt hızında (< 3.6 m/s) içeri düşer
+        const maxEntrySpeed = (cupDist < 0.10) ? 5.0 : 3.6;
+        if (curBallSpeed < maxEntrySpeed) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
@@ -5206,8 +5208,9 @@
         // Eğer top delik ağzında durmuşsa:
         const dToCup = Math.hypot(holeCupPos.x - ballPos.x, holeCupPos.z - ballPos.z);
         const dToCupY = Math.abs(ballPos.y - (holeCupPos.y + ballRadius));
-        // SADECE ve SADECE top merkezi delik boşluğunun içindeyse (< 0.13m) kupa içine düşer
-        if (dToCup < 0.13 && dToCupY < 0.25) {
+        // Ağırlık merkezi kalibrasyonu: Topun ağırlık merkezi delik dairesinin içindeyse (dToCup <= 0.20m, kupa yarıçapı 0.21m),
+        // zemin desteği olmadığı için deliğe düşer. Delik dışındaysa (dToCup > 0.20m) zeminde kalır.
+        if (dToCup <= 0.20 && dToCupY < 0.25) {
           isSinking = true;
           isInHole = true;
           isMoving = false;
@@ -5218,7 +5221,7 @@
           setTimeout(showHoleModal, 1100);
           return;
         }
-        // Top deliğin dibinde/kenarında olsa bile durur ve yeni vuruş bekler! (Kullanıcı talebi)
+        // Top deliğin dışında zeminde kalmışsa durur ve yeni vuruş bekler
         ballVel.set(0, 0, 0);
         isMoving = false;
         lastSafePos.copy(ballPos);
