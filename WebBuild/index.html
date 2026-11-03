@@ -2353,8 +2353,16 @@
     let targetSwitches = [];
     let cupShieldGate = null;
     let isCupLocked = false;
-    let energyConduits = [];
     let sparkParticles = [];
+    let shockwaveRings = [];
+    let lightningArcs = [];
+    let camShakeTime = 0;
+    let camShakeIntensity = 0;
+
+    function triggerCameraShake(intensity = 0.04, duration = 0.18) {
+      camShakeIntensity = intensity;
+      camShakeTime = duration;
+    }
 
     function createSparkBurst(x, y, z, color = 0x00ff88) {
       const pCount = 14;
@@ -2396,63 +2404,85 @@
       }
     }
 
-    function addEnergyConduit(points, switchRef) {
-      const group = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x551122,
-        emissive: 0xcc2233,
-        emissiveIntensity: 0.7,
-        roughness: 0.25,
-        metalness: 0.6
+    function createShockwaveRing(x, z, color = 0x00ff88) {
+      const ringGeo = new THREE.RingGeometry(0.35, 0.44, 32);
+      ringGeo.rotateX(-Math.PI * 0.5);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.95,
+        side: THREE.DoubleSide
       });
+      const mesh = new THREE.Mesh(ringGeo, ringMat);
+      mesh.position.set(x, 0.108, z);
+      courseGroup.add(mesh);
 
-      for (let i = 0; i < points.length - 1; i++) {
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const dx = p2.x - p1.x;
-        const dz = p2.z - p1.z;
-        const len = Math.hypot(dx, dz);
-        const angle = Math.atan2(dx, dz);
-        const midX = (p1.x + p2.x) * 0.5;
-        const midZ = (p1.z + p2.z) * 0.5;
-
-        // Ground ribbon strip
-        const geo = new THREE.BoxGeometry(0.12, 0.018, len);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(midX, 0.11, midZ);
-        mesh.rotation.y = angle;
-        group.add(mesh);
-      }
-
-      // Small glowing circular junction nodes
-      points.forEach(p => {
-        const nodeGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.022, 12);
-        const nodeMesh = new THREE.Mesh(nodeGeo, mat);
-        nodeMesh.position.set(p.x, 0.112, p.z);
-        group.add(nodeMesh);
+      shockwaveRings.push({
+        mesh,
+        ringMat,
+        life: 0.40,
+        maxLife: 0.40
       });
-
-      courseGroup.add(group);
-
-      const conduit = {
-        group,
-        mat,
-        switchRef,
-        isActivated: false
-      };
-      energyConduits.push(conduit);
-      return conduit;
     }
 
-    function activateEnergyConduit(sw) {
-      energyConduits.forEach(c => {
-        if (c.switchRef === sw) {
-          c.isActivated = true;
-          c.mat.color.setHex(0x00ffcc);
-          c.mat.emissive.setHex(0x00ff88);
-          c.mat.emissiveIntensity = 1.6;
+    function updateShockwaves(dt) {
+      for (let i = shockwaveRings.length - 1; i >= 0; i--) {
+        const sw = shockwaveRings[i];
+        sw.life -= dt;
+        if (sw.life <= 0) {
+          if (sw.mesh.parent) sw.mesh.parent.remove(sw.mesh);
+          shockwaveRings.splice(i, 1);
+        } else {
+          const progress = 1.0 - (sw.life / sw.maxLife);
+          const s = 1.0 + progress * 2.6;
+          sw.mesh.scale.set(s, s, 1);
+          sw.ringMat.opacity = Math.max(0, 1.0 - progress);
         }
+      }
+    }
+
+    function createLightningArc(from, to, color = 0x00f0ff) {
+      const points = [];
+      const segments = 8;
+      const start = new THREE.Vector3(from.x, 0.18, from.z);
+      const end = new THREE.Vector3(to.x, 0.55, to.z);
+
+      for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const p = new THREE.Vector3().lerpVectors(start, end, t);
+        if (i > 0 && i < segments) {
+          p.x += (Math.random() - 0.5) * 0.45;
+          p.y += (Math.random() - 0.5) * 0.35 + 0.35 * Math.sin(t * Math.PI);
+          p.z += (Math.random() - 0.5) * 0.45;
+        }
+        points.push(p);
+      }
+
+      const curve = new THREE.CatmullRomCurve3(points);
+      const tubeGeo = new THREE.TubeGeometry(curve, 18, 0.032, 6, false);
+      const tubeMat = new THREE.MeshBasicMaterial({ color: color, wireframe: false });
+      const mesh = new THREE.Mesh(tubeGeo, tubeMat);
+      courseGroup.add(mesh);
+
+      lightningArcs.push({
+        mesh,
+        life: 0.32,
+        maxLife: 0.32
       });
+    }
+
+    function updateLightningArcs(dt) {
+      for (let i = lightningArcs.length - 1; i >= 0; i--) {
+        const arc = lightningArcs[i];
+        arc.life -= dt;
+        if (arc.life <= 0) {
+          if (arc.mesh.parent) arc.mesh.parent.remove(arc.mesh);
+          lightningArcs.splice(i, 1);
+        } else {
+          const progress = arc.life / arc.maxLife;
+          arc.mesh.scale.setScalar(0.7 + progress * 0.5);
+        }
+      }
     }
 
     // Option 2: Draw-a-Bant
@@ -2483,60 +2513,90 @@
       }, duration);
     }
 
-    // --- Option 1: Trigger & Gate Implementation ---
+    // --- Option 1: Professional Cyber Floor Switch & Vault Gate ---
     function addTargetSwitch(x, y, z, facingAngle = 0) {
       const group = new THREE.Group();
       group.position.set(x, y, z);
       group.rotation.y = facingAngle;
 
-      // Heavy chamfered metallic base
-      const baseGeo = new THREE.CylinderGeometry(0.55, 0.62, 0.08, 20);
-      const baseMat = new THREE.MeshStandardMaterial({ color: 0x1b2028, roughness: 0.35, metalness: 0.85 });
-      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
-      baseMesh.position.y = 0.04;
-      group.add(baseMesh);
+      // 1. Titanium Bezel (Gömme şık zemin çerçevesi)
+      const bezelGeo = new THREE.CylinderGeometry(0.55, 0.62, 0.05, 32);
+      const bezelMat = new THREE.MeshStandardMaterial({
+        color: 0x1a212d,
+        roughness: 0.25,
+        metalness: 0.85
+      });
+      const bezelMesh = new THREE.Mesh(bezelGeo, bezelMat);
+      bezelMesh.position.y = 0.025;
+      group.add(bezelMesh);
 
-      // Outer glowing neon rim
-      const rimGeo = new THREE.TorusGeometry(0.53, 0.045, 8, 24);
+      // 2. Çerçeve üzerindeki 6 adet krom kilit vidası
+      const boltGeo = new THREE.CylinderGeometry(0.022, 0.022, 0.015, 8);
+      const boltMat = new THREE.MeshStandardMaterial({ color: 0x8a99ad, metalness: 0.9, roughness: 0.2 });
+      for (let i = 0; i < 6; i++) {
+        const bAngle = (i / 6) * Math.PI * 2;
+        const bolt = new THREE.Mesh(boltGeo, boltMat);
+        bolt.position.set(Math.cos(bAngle) * 0.49, 0.052, Math.sin(bAngle) * 0.49);
+        group.add(bolt);
+      }
+
+      // 3. Neon Cyber Durum Halkası (Elektrik Mavisi Standby - Asla pembe değil!)
+      const rimGeo = new THREE.TorusGeometry(0.43, 0.035, 8, 32);
       rimGeo.rotateX(Math.PI * 0.5);
       const rimMat = new THREE.MeshStandardMaterial({
-        color: 0xff2a44,
-        emissive: 0xff1122,
+        color: 0x00d4ff,
+        emissive: 0x0099dd,
         emissiveIntensity: 0.95,
-        roughness: 0.2
+        roughness: 0.2,
+        metalness: 0.5
       });
       const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-      rimMesh.position.y = 0.08;
+      rimMesh.position.y = 0.05;
       group.add(rimMesh);
 
-      // Spring-loaded target push button
-      const btnGeo = new THREE.CylinderGeometry(0.38, 0.40, 0.16, 20);
-      const btnMat = new THREE.MeshStandardMaterial({
-        color: 0xff3b30,
-        emissive: 0xff2233,
-        emissiveIntensity: 0.65,
-        roughness: 0.25
+      // 4. Koyu Grafit Kauçuk Baskı Plakası
+      const plateGeo = new THREE.CylinderGeometry(0.39, 0.41, 0.045, 32);
+      const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x222834,
+        roughness: 0.45,
+        metalness: 0.55
       });
-      const btnMesh = new THREE.Mesh(btnGeo, btnMat);
-      btnMesh.position.y = 0.14;
-      group.add(btnMesh);
+      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+      plateMesh.position.y = 0.045;
+      group.add(plateMesh);
 
-      // Floating holographic target chevron/ring
-      const iconGeo = new THREE.RingGeometry(0.12, 0.24, 20);
-      iconGeo.rotateX(-Math.PI * 0.5);
-      const iconMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-      const iconMesh = new THREE.Mesh(iconGeo, iconMat);
-      iconMesh.position.y = 0.23;
-      group.add(iconMesh);
+      // 5. Merkez Güç Çekirdeği İkonu
+      const emblemGeo = new THREE.RingGeometry(0.10, 0.22, 24);
+      emblemGeo.rotateX(-Math.PI * 0.5);
+      const emblemMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide });
+      const emblemMesh = new THREE.Mesh(emblemGeo, emblemMat);
+      emblemMesh.position.y = 0.07;
+      group.add(emblemMesh);
 
-      // Floating holographic lightning chevron icon
-      const holoGeo = new THREE.ConeGeometry(0.09, 0.18, 4);
-      holoGeo.rotateX(Math.PI);
-      const holoMat = new THREE.MeshBasicMaterial({ color: 0xffdd44, wireframe: true });
-      const holoMesh = new THREE.Mesh(holoGeo, holoMat);
-      holoMesh.position.y = 0.55;
-      group.add(holoMesh);
+      // 6. Havada Süzülen Holografik Enerji Kristali (Elmas / Oktahedron)
+      const holoGroup = new THREE.Group();
+      holoGroup.position.set(0, 0.42, 0);
 
+      const crystalGeo = new THREE.OctahedronGeometry(0.11, 0);
+      const crystalMat = new THREE.MeshStandardMaterial({
+        color: 0x00e5ff,
+        emissive: 0x0088ff,
+        emissiveIntensity: 0.85,
+        roughness: 0.1,
+        metalness: 0.3,
+        transparent: true,
+        opacity: 0.85
+      });
+      const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
+      holoGroup.add(crystalMesh);
+
+      const orbitGeo = new THREE.TorusGeometry(0.17, 0.014, 8, 24);
+      orbitGeo.rotateX(Math.PI * 0.35);
+      const orbitMat = new THREE.MeshBasicMaterial({ color: 0x88eeff, transparent: true, opacity: 0.7 });
+      const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+      holoGroup.add(orbitMesh);
+
+      group.add(holoGroup);
       courseGroup.add(group);
 
       const sw = {
@@ -2545,13 +2605,13 @@
         isTriggered: false,
         group,
         rimMat,
-        btnMat,
-        btnMesh,
-        iconMesh,
-        holoMesh,
-        springY: 0.14,
-        springTargetY: 0.14,
-        springVel: 0
+        plateMat,
+        plateMesh,
+        emblemMat,
+        holoGroup,
+        crystalMesh,
+        crystalMat,
+        orbitMesh
       };
       targetSwitches.push(sw);
       return sw;
@@ -2561,58 +2621,126 @@
       const group = new THREE.Group();
       group.position.copy(pos);
 
-      // Forcefield dome
-      const domeGeo = new THREE.SphereGeometry(0.72, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
-      const domeMat = new THREE.MeshStandardMaterial({
-        color: 0xff0055,
-        emissive: 0xff0044,
-        emissiveIntensity: 0.75,
+      // 1. Kupanın 4 Köşesinde Krom Enerji Pilonları (Cyber Emitters)
+      const pylons = [];
+      const pylonMat = new THREE.MeshStandardMaterial({
+        color: 0x1f2937,
+        metalness: 0.85,
+        roughness: 0.25
+      });
+      const pylonCapMat = new THREE.MeshStandardMaterial({
+        color: 0x00d4ff,
+        emissive: 0x0099ff,
+        emissiveIntensity: 1.0,
+        roughness: 0.2
+      });
+
+      const pylonOffset = 0.58;
+      const pylonCorners = [
+        [-pylonOffset, -pylonOffset],
+        [pylonOffset, -pylonOffset],
+        [pylonOffset, pylonOffset],
+        [-pylonOffset, pylonOffset]
+      ];
+
+      pylonCorners.forEach(([cx, cz]) => {
+        const pGroup = new THREE.Group();
+        pGroup.position.set(cx, 0, cz);
+
+        const colGeo = new THREE.CylinderGeometry(0.042, 0.062, 0.55, 16);
+        const colMesh = new THREE.Mesh(colGeo, pylonMat);
+        colMesh.position.y = 0.275;
+        pGroup.add(colMesh);
+
+        const capGeo = new THREE.SphereGeometry(0.052, 12, 12);
+        const capMesh = new THREE.Mesh(capGeo, pylonCapMat);
+        capMesh.position.y = 0.55;
+        pGroup.add(capMesh);
+
+        group.add(pGroup);
+        pylons.push({ group: pGroup, colMesh, capMesh, initY: 0 });
+      });
+
+      // 2. Pilonlar Arasında Çift Kademeli Elektrik Lazer Işınları
+      const laserMat = new THREE.MeshStandardMaterial({
+        color: 0x00f0ff,
+        emissive: 0x00d4ff,
+        emissiveIntensity: 1.5,
         transparent: true,
-        opacity: 0.54,
+        opacity: 0.85,
+        roughness: 0.1
+      });
+      const laserBeams = [];
+
+      for (let i = 0; i < 4; i++) {
+        const [x1, z1] = pylonCorners[i];
+        const [x2, z2] = pylonCorners[(i + 1) % 4];
+        const dx = x2 - x1;
+        const dz = z2 - z1;
+        const len = Math.hypot(dx, dz);
+        const angle = Math.atan2(dx, dz);
+
+        [0.30, 0.52].forEach(beamY => {
+          const beamGeo = new THREE.CylinderGeometry(0.016, 0.016, len, 8);
+          beamGeo.rotateX(Math.PI * 0.5);
+          const beam = new THREE.Mesh(beamGeo, laserMat);
+          beam.position.set((x1 + x2) * 0.5, beamY, (z1 + z2) * 0.5);
+          beam.rotation.y = angle;
+          group.add(beam);
+          laserBeams.push(beam);
+        });
+      }
+
+      // 3. İç Plazma Alanı (Hexagonal Cyan Shimmer)
+      const shieldGeo = new THREE.CylinderGeometry(0.68, 0.68, 0.46, 24, 1, true);
+      const shieldMat = new THREE.MeshStandardMaterial({
+        color: 0x0088ff,
+        emissive: 0x0055ff,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.26,
         roughness: 0.1,
-        metalness: 0.2,
+        metalness: 0.3,
         side: THREE.DoubleSide
       });
-      const domeMesh = new THREE.Mesh(domeGeo, domeMat);
-      domeMesh.position.y = 0.02;
-      group.add(domeMesh);
+      const shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+      shieldMesh.position.y = 0.32;
+      group.add(shieldMesh);
 
-      // Neon base rim
-      const ringGeo = new THREE.RingGeometry(0.68, 0.76, 24);
-      ringGeo.rotateX(-Math.PI * 0.5);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0xff3377, side: THREE.DoubleSide });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.position.y = 0.03;
-      group.add(ringMesh);
-
-      // Floating lock icon
+      // 4. Havada Süzülen Altın & Krom Siber Kilit
       const lockGroup = new THREE.Group();
       lockGroup.position.set(0, 0.95, 0);
 
-      const shackleGeo = new THREE.TorusGeometry(0.12, 0.035, 8, 16, Math.PI);
+      const shackleGeo = new THREE.TorusGeometry(0.12, 0.035, 8, 20, Math.PI);
       shackleGeo.rotateZ(Math.PI);
-      const lockMat = new THREE.MeshStandardMaterial({ color: 0xffdd44, metalness: 0.8, roughness: 0.2 });
-      const shackleMesh = new THREE.Mesh(shackleGeo, lockMat);
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, metalness: 0.9, roughness: 0.15 });
+      const shackleMesh = new THREE.Mesh(shackleGeo, goldMat);
       shackleMesh.position.y = 0.08;
       lockGroup.add(shackleMesh);
 
       const bodyGeo = new THREE.BoxGeometry(0.24, 0.18, 0.10);
-      const bodyMesh = new THREE.Mesh(bodyGeo, lockMat);
+      const bodyMesh = new THREE.Mesh(bodyGeo, goldMat);
       lockGroup.add(bodyMesh);
 
-      // Indicator LEDs on the lock body for multi-switch requirements
+      const coreGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.105, 12);
+      coreGeo.rotateX(Math.PI * 0.5);
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00d4ff, emissiveIntensity: 1.2 });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      lockGroup.add(coreMesh);
+
+      // Kilit gövdesindeki LED göstergeleri
       const leds = [];
       if (requiredSwitches > 1) {
         for (let i = 0; i < requiredSwitches; i++) {
-          const ledGeo = new THREE.SphereGeometry(0.028, 12, 12);
+          const ledGeo = new THREE.SphereGeometry(0.026, 12, 12);
           const ledMat = new THREE.MeshStandardMaterial({
-            color: 0xff2233,
-            emissive: 0xff1122,
+            color: 0xffaa00,
+            emissive: 0xff7700,
             emissiveIntensity: 1.2
           });
           const ledMesh = new THREE.Mesh(ledGeo, ledMat);
           const offsetX = (i - (requiredSwitches - 1) * 0.5) * 0.09;
-          ledMesh.position.set(offsetX, 0, 0.055);
+          ledMesh.position.set(offsetX, -0.04, 0.055);
           lockGroup.add(ledMesh);
           leds.push({ mesh: ledMesh, mat: ledMat });
         }
@@ -2625,8 +2753,11 @@
         pos: pos.clone(),
         radius: 0.72,
         group,
-        domeMat,
-        domeMesh,
+        pylons,
+        laserBeams,
+        laserMat,
+        shieldMesh,
+        shieldMat,
         lockGroup,
         shackleMesh,
         leds,
@@ -2639,14 +2770,17 @@
 
     function checkSwitchesAndUnlock(triggeredSwitch) {
       if (triggeredSwitch) {
-        activateEnergyConduit(triggeredSwitch);
-        createSparkBurst(triggeredSwitch.x, triggeredSwitch.y + 0.18, triggeredSwitch.z, 0x00ff88);
+        createSparkBurst(triggeredSwitch.x, 0.18, triggeredSwitch.z, 0x00ff88);
+        createShockwaveRing(triggeredSwitch.x, triggeredSwitch.z, 0x00ff88);
+        if (cupShieldGate) {
+          createLightningArc(triggeredSwitch, cupShieldGate.pos, 0x00ffcc);
+        }
       }
 
       const activeCount = targetSwitches.filter(s => s.isTriggered).length;
       const totalCount = targetSwitches.length;
 
-      // Update LED indicators on lock
+      // Kilit üzerindeki LED hücrelerini güncelle
       if (cupShieldGate && cupShieldGate.leds && cupShieldGate.leds.length > 0) {
         for (let i = 0; i < cupShieldGate.leds.length; i++) {
           if (i < activeCount) {
@@ -2655,6 +2789,23 @@
             cupShieldGate.leds[i].mat.emissiveIntensity = 2.0;
           }
         }
+      }
+
+      // Dinamik Bölüm Reaksiyonları
+      // 4. Bölümde şalter dönen engeli kilitler!
+      if (currentVoodooMode === 'gate' && currentGateHole === 3) {
+        rotatingBars.forEach(rb => {
+          rb.speed = 0;
+          createSparkBurst(rb.pivot.position.x, 0.35, rb.pivot.position.z, 0x00ff88);
+        });
+      }
+
+      // 5. Bölümde 1. şalter turbo hızlandırıcıyı overdrive moduna geçirir!
+      if (currentVoodooMode === 'gate' && currentGateHole === 4 && activeCount === 1) {
+        speedBoosters.forEach(b => {
+          b.speed = 28;
+        });
+        showVoodooToast("⚡ TURBO AKTİF! ZİRVEYE FIRLA! 🚀", 3500);
       }
 
       if (activeCount >= totalCount) {
@@ -2672,20 +2823,31 @@
       isCupLocked = false;
       playGateOpen();
       triggerHaptic('heavy');
-      showVoodooToast("🔓 TÜM ŞALTERLER AÇILDI! ŞİMDİ DELİĞE VUR! ⛳", 4000);
+      triggerCameraShake(0.04, 0.22);
+      showVoodooToast("🔓 KİLİT AÇILDI! ŞİMDİ DELİĞE VUR! ⛳", 4000);
 
       let elapsed = 0;
       const interval = setInterval(() => {
         elapsed += 0.03;
         if (!cupShieldGate) { clearInterval(interval); return; }
-        cupShieldGate.domeMesh.scale.multiplyScalar(1.045);
-        cupShieldGate.domeMat.opacity = Math.max(0, 0.54 - elapsed * 1.6);
-        cupShieldGate.lockGroup.position.y += 0.06;
-        cupShieldGate.lockGroup.scale.multiplyScalar(0.91);
+
+        // Kilit açılır, kelepçe döner ve yukarı süzülür
         if (cupShieldGate.shackleMesh) {
-          cupShieldGate.shackleMesh.rotation.y += 0.15;
+          cupShieldGate.shackleMesh.rotation.y += 0.16;
         }
-        if (elapsed >= 0.35) {
+        cupShieldGate.lockGroup.position.y += 0.07;
+        cupShieldGate.lockGroup.scale.multiplyScalar(0.91);
+
+        // Lazerler ve kalkan söner
+        cupShieldGate.laserMat.opacity = Math.max(0, 0.85 - elapsed * 2.5);
+        cupShieldGate.shieldMat.opacity = Math.max(0, 0.26 - elapsed * 1.2);
+
+        // 4 krom pylon zemine gömülür (retract)
+        cupShieldGate.pylons.forEach(p => {
+          p.group.position.y = -elapsed * 1.6;
+        });
+
+        if (elapsed >= 0.40) {
           clearInterval(interval);
           if (cupShieldGate && cupShieldGate.group.parent) {
             cupShieldGate.group.parent.remove(cupShieldGate.group);
@@ -2888,15 +3050,7 @@
       // Sağ tarafta mekanik hedef şalteri
       const sw1 = addTargetSwitch(1.40, 0.10, -1.2, 0);
 
-      // Şalterden kalkan kubbesine uzanan neon enerji kablosu
-      addEnergyConduit([
-        { x: 1.40, z: -1.20 },
-        { x: 1.85, z: 1.00 },
-        { x: 1.85, z: 4.80 },
-        { x: 0.00, z: 6.00 }
-      ], sw1);
-
-      // Deliği koruyan kırmızı enerji kalkanı kubbesi
+      // Deliği koruyan siber lazer kafesi ve kilit
       addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0), 1);
     }
 
@@ -2923,14 +3077,6 @@
 
       // Şalterin arkasında topu deliğe doğru yönlendiren ileri bant tamponu
       addBumper(-2.0, 0.10, 3.2, 0.40);
-
-      // Enerji iletim kablosu
-      addEnergyConduit([
-        { x: -1.60, z: 1.20 },
-        { x: -2.00, z: 3.50 },
-        { x: -2.00, z: 5.50 },
-        { x: 0.00, z: 6.00 }
-      ], sw1);
 
       addCupShieldGate(new THREE.Vector3(0, 0.1, 6.0), 1);
     }
@@ -2962,21 +3108,6 @@
       const sw1 = addTargetSwitch(-2.6, 0.10, 1.8, 0);
       const sw2 = addTargetSwitch(2.6, 0.10, 1.8, 0);
 
-      // Çift neon enerji hatları
-      addEnergyConduit([
-        { x: -2.60, z: 1.80 },
-        { x: -3.40, z: 3.50 },
-        { x: -3.40, z: 5.60 },
-        { x: 0.00, z: 6.20 }
-      ], sw1);
-
-      addEnergyConduit([
-        { x: 2.60, z: 1.80 },
-        { x: 3.40, z: 3.50 },
-        { x: 3.40, z: 5.60 },
-        { x: 0.00, z: 6.20 }
-      ], sw2);
-
       // 2 şalter gerektiren kilit kubbesi (Kilitte 2 LED göstergesi)
       addCupShieldGate(new THREE.Vector3(0, 0.1, 6.2), 2);
     }
@@ -3002,14 +3133,6 @@
 
       // Rotorun tam arkasında hedef şalter
       const sw1 = addTargetSwitch(0, 0.10, 2.0, 0);
-
-      // Enerji kablosu
-      addEnergyConduit([
-        { x: 0.00, z: 2.00 },
-        { x: 1.20, z: 3.50 },
-        { x: 1.20, z: 5.20 },
-        { x: 0.00, z: 6.50 }
-      ], sw1);
 
       addCupShieldGate(new THREE.Vector3(0, 0.1, 6.5), 1);
     }
@@ -3054,21 +3177,6 @@
       // 2. Şalter (Üst katta sağ nişte)
       const sw2 = addTargetSwitch(1.9, 0.10, 4.2, 0);
 
-      // Enerji devre hatları
-      addEnergyConduit([
-        { x: -1.80, z: -3.20 },
-        { x: -2.00, z: -1.00 },
-        { x: -2.00, z: 2.50 },
-        { x: -2.00, z: 5.50 },
-        { x: 0.00, z: 6.50 }
-      ], sw1);
-
-      addEnergyConduit([
-        { x: 1.90, z: 4.20 },
-        { x: 2.20, z: 5.50 },
-        { x: 0.00, z: 6.50 }
-      ], sw2);
-
       // 2 şalter gerektiren kilit kubbesi
       addCupShieldGate(new THREE.Vector3(0, 0.1, 6.5), 2);
     }
@@ -3082,6 +3190,19 @@
     ];
     window.gateLevels = gateLevels;
     window.loadGateHole = loadGateHole;
+    Object.defineProperty(window, 'targetSwitches', { get: () => targetSwitches });
+    Object.defineProperty(window, 'isCupLocked', { get: () => isCupLocked, set: v => isCupLocked = v });
+    Object.defineProperty(window, 'cupShieldGate', { get: () => cupShieldGate });
+    Object.defineProperty(window, 'ballPos', { get: () => ballPos });
+    Object.defineProperty(window, 'ballVel', { get: () => ballVel });
+    Object.defineProperty(window, 'holeCupPos', { get: () => holeCupPos });
+    Object.defineProperty(window, 'isMoving', { get: () => isMoving, set: v => isMoving = v });
+    Object.defineProperty(window, 'isInHole', { get: () => isInHole, set: v => isInHole = v });
+    Object.defineProperty(window, 'isSinking', { get: () => isSinking, set: v => isSinking = v });
+    Object.defineProperty(window, 'speedBoosters', { get: () => speedBoosters });
+    window.updatePhysics = updatePhysics;
+    window.getGroundHeight = getGroundHeight;
+    window.unlockCupGate = unlockCupGate;
 
     function loadGateHole(idx) {
       if (idx < 0 || idx >= gateLevels.length) idx = 0;
@@ -3092,7 +3213,7 @@
       speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
       icePatches = []; jumpRamps = []; floorMeshes = [];
       targetSwitches = []; cupShieldGate = null; isCupLocked = false;
-      energyConduits = []; sparkParticles = [];
+      sparkParticles = []; shockwaveRings = []; lightningArcs = [];
       drawnWalls = []; isDrawingWall = false;
       if (drawPreviewMesh) drawPreviewMesh.visible = false;
       portalPairs = [];
@@ -4715,30 +4836,6 @@
           }
         }
 
-        // 4. Mekanik Şalter Hedefi (Target Switch)
-        for (let i = 0; i < targetSwitches.length; i++) {
-          const sw = targetSwitches[i];
-          const rx = curX - sw.x;
-          const rz = curZ - sw.z;
-          const b = rx * curDx + rz * curDz;
-          const c = rx * rx + rz * rz - (sw.radius + ballRadius) * (sw.radius + ballRadius);
-          if (c > 0 && b < 0) {
-            const discr = b * b - c;
-            if (discr >= 0) {
-              const t = -b - Math.sqrt(discr);
-              if (t > 0.05 && t < closestT) {
-                closestT = t;
-                const hx = curX + curDx * t - sw.x;
-                const hz = curZ + curDz * t - sw.z;
-                const hlen = Math.hypot(hx, hz) || 1;
-                hitNormX = hx / hlen;
-                hitNormZ = hz / hlen;
-                didHit = true;
-              }
-            }
-          }
-        }
-
         // 5. Kilitli Delik Enerji Kalkanı (Cup Shield Gate)
         if (isCupLocked && cupShieldGate && !cupShieldGate.shattering) {
           const rx = curX - cupShieldGate.pos.x;
@@ -5248,8 +5345,15 @@
       });
 
       if (cupShieldGate && !cupShieldGate.shattering) {
-        cupShieldGate.domeMat.opacity = Math.sin(gameElapsedTime * 5.0) * 0.14 + 0.54;
-        cupShieldGate.lockGroup.rotation.y = gameElapsedTime * 1.5;
+        if (cupShieldGate.shieldMat) {
+          cupShieldGate.shieldMat.opacity = Math.sin(gameElapsedTime * 4.0) * 0.10 + 0.24;
+        }
+        if (cupShieldGate.laserMat) {
+          cupShieldGate.laserMat.emissiveIntensity = 1.3 + Math.sin(gameElapsedTime * 6.0) * 0.35;
+        }
+        if (cupShieldGate.lockGroup) {
+          cupShieldGate.lockGroup.rotation.y = gameElapsedTime * 1.5;
+        }
       }
 
       // Top dururken dönen tahta topa çarparsa topu hareketlendir
@@ -5460,36 +5564,27 @@
           }
         });
 
-        // Mekanik Şalter Çarpışmaları (Hedef tetikleyici)
+        // Mekanik Zemin Şalteri (Zemin Sensörü - SEKTİRMEZ, ÜZERİNDEN AKICI GEÇER!)
         targetSwitches.forEach(sw => {
           if (!sw.isTriggered) {
             const dx = ballPos.x - sw.x;
             const dz = ballPos.z - sw.z;
             const dist = Math.hypot(dx, dz);
-            if (dist < sw.radius + ballRadius) {
-              const nx = dx / (dist || 1);
-              const nz = dz / (dist || 1);
-              const dot = ballVel.x * nx + ballVel.z * nz;
-              if (dot < 0) {
-                ballVel.x = (ballVel.x - 1.9 * dot * nx) * 0.95;
-                ballVel.z = (ballVel.z - 1.9 * dot * nz) * 0.95;
-                if (Math.hypot(ballVel.x, ballVel.z) < 5.0) {
-                  const s = 5.0 / (Math.hypot(ballVel.x, ballVel.z) || 1);
-                  ballVel.x *= s; ballVel.z *= s;
-                }
-              }
-              ballPos.x = sw.x + nx * (sw.radius + ballRadius + 0.02);
-              ballPos.z = sw.z + nz * (sw.radius + ballRadius + 0.02);
-
+            if (dist < sw.radius + ballRadius * 0.8) {
               sw.isTriggered = true;
+
+              // Zümrüt Yeşili Aktif Durum
               sw.rimMat.color.setHex(0x00ff88);
               sw.rimMat.emissive.setHex(0x00cc66);
-              sw.btnMat.color.setHex(0x00e676);
-              sw.btnMat.emissive.setHex(0x00b34d);
-              sw.btnMesh.position.y = 0.05;
-              if (sw.holoMesh) {
-                sw.holoMesh.material.color.setHex(0x00ff88);
+              if (sw.emblemMat) sw.emblemMat.color.setHex(0x00ff88);
+              if (sw.crystalMat) {
+                sw.crystalMat.color.setHex(0x00ff88);
+                sw.crystalMat.emissive.setHex(0x00ff88);
               }
+              if (sw.plateMesh) sw.plateMesh.position.y = 0.02;
+
+              // Top SEKTİRİLMEZ! Doğal yuvarlanma hattını korur
+              ballVel.multiplyScalar(0.98);
 
               checkSwitchesAndUnlock(sw);
             }
@@ -5869,6 +5964,13 @@
         cameraLookCurrent.lerp(lookTarget, dt * 10.0);
         camera.lookAt(cameraLookCurrent);
       }
+
+      // Mikro kamera sarsıntısı (Screen Shake)
+      if (camShakeTime > 0) {
+        camShakeTime -= dt;
+        camera.position.x += (Math.random() - 0.5) * camShakeIntensity;
+        camera.position.y += (Math.random() - 0.5) * camShakeIntensity;
+      }
     }
 
     // --- Render Loop ---
@@ -5924,39 +6026,33 @@
         ballRing.visible = false;
       }
 
-      // Şalter, Kalkan, Enerji Kabloları ve Kıvılcım Görsel Animasyonları
+      // Şalter, Kalkan, Şimşek, Şok Dalgası ve Kıvılcım Görsel Animasyonları
       updateSparks(dt);
+      updateShockwaves(dt);
+      updateLightningArcs(dt);
 
       if (cupShieldGate && !cupShieldGate.shattering) {
         if (cupShieldGate.lockGroup) {
           cupShieldGate.lockGroup.position.y = 0.95 + Math.sin(gameElapsedTime * 3.5) * 0.05;
         }
-        if (cupShieldGate.domeMat) {
-          cupShieldGate.domeMat.emissiveIntensity = 0.65 + Math.sin(gameElapsedTime * 4.0) * 0.20;
+        if (cupShieldGate.shieldMat) {
+          cupShieldGate.shieldMat.opacity = 0.24 + Math.sin(gameElapsedTime * 4.0) * 0.10;
+        }
+        if (cupShieldGate.laserMat) {
+          cupShieldGate.laserMat.emissiveIntensity = 1.3 + Math.sin(gameElapsedTime * 6.0) * 0.35;
         }
       }
 
       targetSwitches.forEach(sw => {
         if (!sw.isTriggered) {
-          if (sw.holoMesh) {
-            sw.holoMesh.rotation.y += dt * 2.0;
-            sw.holoMesh.position.y = 0.55 + Math.sin(gameElapsedTime * 3.0) * 0.04;
-          }
-          if (sw.iconMesh) {
-            sw.iconMesh.rotation.z += dt * 1.5;
+          if (sw.holoGroup) {
+            sw.holoGroup.rotation.y += dt * 1.8;
+            sw.holoGroup.position.y = 0.42 + Math.sin(gameElapsedTime * 3.0) * 0.04;
           }
         } else {
-          if (sw.holoMesh) {
-            sw.holoMesh.rotation.y += dt * 4.0;
+          if (sw.holoGroup) {
+            sw.holoGroup.rotation.y += dt * 4.0;
           }
-        }
-      });
-
-      energyConduits.forEach(conduit => {
-        if (conduit.isActivated) {
-          conduit.mat.emissiveIntensity = 1.2 + Math.sin(gameElapsedTime * 8.0) * 0.35;
-        } else {
-          conduit.mat.emissiveIntensity = 0.55 + Math.sin(gameElapsedTime * 3.0) * 0.20;
         }
       });
 
