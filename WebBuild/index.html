@@ -3878,10 +3878,12 @@
     const camHeightOffset = 0.35;
     let cameraLookCurrent = new THREE.Vector3();
 
-    // Interaction modes: 'NONE', 'SLINGSHOT', 'ORBIT'
+    // Interaction modes: 'NONE', 'SLINGSHOT', 'ORBIT', 'PINCH'
     let interactionMode = 'NONE';
     let touchStart = { x: 0, y: 0 };
     let lastPointer = { x: 0, y: 0 };
+    let pinchStartDist = 0;
+    let pinchStartCamDist = 5.4;
     let lockedCamDir = new THREE.Vector3(0, 0, 1);
     let lockedCamRight = new THREE.Vector3(1, 0, 0);
 
@@ -3904,6 +3906,16 @@
       initAudio();
       if (isMoving || isInHole) return;
       if (e.target && e.target.closest && e.target.closest('#hud, #voodoo-mode-bar, #draw-wall-panel, #modal, #gameover-modal')) {
+        return;
+      }
+
+      // İki parmakla yakınlaştırma/uzaklaştırma (Pinch-to-zoom)
+      if (e.touches && e.touches.length === 2) {
+        interactionMode = 'PINCH';
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStartDist = Math.hypot(dx, dy);
+        pinchStartCamDist = camDist;
         return;
       }
 
@@ -3936,8 +3948,8 @@
         }
       }
 
-      // Sapan özelliği SADECE topun üzerine dokunulup çekildiğinde çalışır (65px geniş temas yarıçapı)
-      if (distToBall <= 65) {
+      // Sapan özelliği SADECE topun üzerine dokunulup çekildiğinde çalışır (55px temas yarıçapı)
+      if (distToBall <= 55) {
         interactionMode = 'SLINGSHOT';
         touchStart = { x: clientX, y: clientY };
         powerRatio = 0;
@@ -3959,8 +3971,23 @@
     function onPointerMove(e) {
       if (isMoving || isInHole) return;
       if (e.cancelable && interactionMode !== 'NONE') e.preventDefault();
+
+      // İki parmakla yakınlaştırma hareketi
+      if (interactionMode === 'PINCH' && e.touches && e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const curDist = Math.hypot(dx, dy);
+        if (pinchStartDist > 10) {
+          const factor = pinchStartDist / Math.max(10, curDist);
+          camDist = Math.max(2.8, Math.min(12.0, pinchStartCamDist * factor));
+        }
+        return;
+      }
+
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const prevX = (lastPointer && lastPointer.x !== undefined) ? lastPointer.x : clientX;
+      const prevY = (lastPointer && lastPointer.y !== undefined) ? lastPointer.y : clientY;
       lastPointer = { x: clientX, y: clientY };
 
       if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
@@ -3984,12 +4011,12 @@
       }
 
       if (interactionMode === 'ORBIT') {
-        const dx = clientX - lastPointer.x;
-        const dy = clientY - lastPointer.y;
+        const dx = clientX - prevX;
+        const dy = clientY - prevY;
 
         // Ekran kaydırması ile kamera açısını top etrafında pürüzsüz döndür
-        camYaw -= dx * 0.0055;
-        camPitch = Math.max(0.12, Math.min(1.22, camPitch + dy * 0.004));
+        camYaw -= dx * 0.0065;
+        camPitch = Math.max(0.12, Math.min(1.25, camPitch + dy * 0.0045));
         return;
       }
 
@@ -4018,6 +4045,11 @@
     }
 
     function onPointerUp(e) {
+      if (interactionMode === 'PINCH') {
+        interactionMode = 'NONE';
+        return;
+      }
+
       if (interactionMode === 'DRAW_WALL' && isDrawingWall && drawStart3D) {
         if (drawPreviewMesh) drawPreviewMesh.visible = false;
         isDrawingWall = false;
@@ -4072,6 +4104,11 @@
     window.addEventListener('touchstart', onPointerDown, { passive: true });
     window.addEventListener('touchmove', onPointerMove, { passive: false });
     window.addEventListener('touchend', (e) => onPointerUp(e), { passive: true });
+
+    // Masaüstünde fare tekerleği ile kamerayı yakınlaştır / uzaklaştır
+    window.addEventListener('wheel', (e) => {
+      camDist = Math.max(2.8, Math.min(12.0, camDist + e.deltaY * 0.005));
+    }, { passive: true });
 
     function getAimColor(t) {
       const clampedT = Math.max(0, Math.min(1, t));
@@ -5344,7 +5381,7 @@
         camera.position.lerp(targetCamPos, dt * 5.0);
         cameraLookCurrent.lerp(lookTarget, dt * 7.0);
         camera.lookAt(cameraLookCurrent);
-      } else if (interactionMode === 'ORBIT') {
+      } else if (interactionMode === 'ORBIT' || interactionMode === 'PINCH') {
         // Ekran kaydırılırken kamera açısını anında ve pürüzsüzce senkronize et (Sıfır mikro-titreme)
         camera.position.copy(targetCamPos);
         cameraLookCurrent.copy(lookTarget);
