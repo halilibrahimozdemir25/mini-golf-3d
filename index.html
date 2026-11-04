@@ -491,6 +491,49 @@
       box-shadow: 0 2px 8px rgba(0, 230, 118, 0.45);
     }
 
+    #draw-sub-bar {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 0px) + 88px);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(18, 16, 8, 0.92);
+      border: 1px solid rgba(255, 214, 50, 0.45);
+      border-radius: 18px;
+      padding: 3px 8px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 12;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+      max-width: 96%;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .draw-sub-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #ffd632;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .draw-sub-tab:active {
+      transform: scale(0.94);
+    }
+    .draw-sub-tab.active {
+      background: linear-gradient(135deg, #ffd632, #ffaa00);
+      color: #1a1202;
+      font-weight: 800;
+      border-color: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 2px 8px rgba(255, 214, 50, 0.45);
+    }
+
     /* Draw-a-Bant Floating Controls (Option 2) */
     #draw-wall-panel {
       position: absolute;
@@ -578,6 +621,15 @@
     <button class="gate-sub-tab" id="gate-tab-2" onclick="loadGateHole(2)">3. Çifte Kilit</button>
     <button class="gate-sub-tab" id="gate-tab-3" onclick="loadGateHole(3)">4. Dönen Rotor</button>
     <button class="gate-sub-tab" id="gate-tab-4" onclick="loadGateHole(4)">5. Zirve 🏆</button>
+  </div>
+
+  <!-- Duvar Çiz Seviye Seçim Barı (Unit 3: 5 Handcrafted Levels) -->
+  <div id="draw-sub-bar" style="display:none;">
+    <button class="draw-sub-tab active" id="draw-tab-0" onclick="loadDrawHole(0)">1. İlk Bant</button>
+    <button class="draw-sub-tab" id="draw-tab-1" onclick="loadDrawHole(1)">2. V-Sektirme</button>
+    <button class="draw-sub-tab" id="draw-tab-2" onclick="loadDrawHole(2)">3. Uçurum</button>
+    <button class="draw-sub-tab" id="draw-tab-3" onclick="loadDrawHole(3)">4. Çifte Bant 2x</button>
+    <button class="draw-sub-tab" id="draw-tab-4" onclick="loadDrawHole(4)">5. Zirve 🏆</button>
   </div>
 
   <!-- Dynamic Guidance Toast for Voodoo Mechanics -->
@@ -2320,8 +2372,16 @@
     }
 
     function triggerGameOver() {
-      // İlk 10 Bölümde ASLA kaybetme yok: top otomatik olarak piste güvenli noktaya geri döner
-      if (currentHole < 10) {
+      // İlk bölümlerde ASLA kaybetme yok: top otomatik olarak piste güvenli noktaya geri döner
+      if (currentVoodooMode === 'classic' && currentHole < 10) {
+        respawnBall();
+        return;
+      }
+      if (currentVoodooMode === 'gate' && currentGateHole < 3) {
+        respawnBall();
+        return;
+      }
+      if (currentVoodooMode === 'draw' && currentDrawHole < 3) {
         respawnBall();
         return;
       }
@@ -2335,9 +2395,9 @@
       if (currentVoodooMode === 'classic') {
         buildCourse(currentHole);
       } else if (currentVoodooMode === 'gate') {
-        loadShowcaseGate();
+        loadGateHole(currentGateHole);
       } else if (currentVoodooMode === 'draw') {
-        loadShowcaseDraw();
+        loadDrawHole(currentDrawHole);
       } else if (currentVoodooMode === 'portal') {
         loadShowcasePortal();
       }
@@ -2485,14 +2545,15 @@
       }
     }
 
-    // Option 2: Draw-a-Bant
+    // Option 2: Draw-a-Bant (Unit 3: 5 Handcrafted Levels)
+    let currentDrawHole = 0;
     let drawnWalls = [];
     let isDrawingWall = false;
     let drawStart3D = null;
     let drawEnd3D = null;
     let drawPreviewMesh = null;
     let drawToolActive = false;
-    const maxDrawnWalls = 1;
+    let maxDrawnWalls = 1;
 
     // Option 3: Portal & Dimension Warp
     let portalPairs = [];
@@ -3011,6 +3072,11 @@
         gateSubBar.style.display = (mode === 'gate') ? 'flex' : 'none';
       }
 
+      const drawSubBar = document.getElementById('draw-sub-bar');
+      if (drawSubBar) {
+        drawSubBar.style.display = (mode === 'draw') ? 'flex' : 'none';
+      }
+
       const drawPanel = document.getElementById('draw-wall-panel');
       if (drawPanel) {
         drawPanel.style.display = (mode === 'draw') ? 'flex' : 'none';
@@ -3022,7 +3088,7 @@
       } else if (mode === 'gate') {
         loadGateHole(currentGateHole);
       } else if (mode === 'draw') {
-        loadShowcaseDraw();
+        loadDrawHole(currentDrawHole);
       } else if (mode === 'portal') {
         loadShowcasePortal();
       }
@@ -3269,20 +3335,174 @@
       loadGateHole(currentGateHole);
     }
 
-    // Showcase 2: Draw-a-Bant
-    function loadShowcaseDraw() {
+    // ==========================================
+    // UNIT 3: DUVAR ÇİZME (5 HANDCRAFTED LEVELS)
+    // ==========================================
+
+    function buildDrawHole1() {
+      // 1. İlk Bant (Açılı Dönüş Tutorial)
+      addFloor(-2.0, 0, -2.5, 3.6, 0.2, 8.0);
+      addWall(-3.93, 0.29, -2.5, 0.26, 0.58, 8.26);
+      addWall(-2.0, 0.18, -6.63, 3.6, 0.36, 0.26);
+      addCornerWedge(-3.8, -6.5, 1, 1, 0.75, 0.18, 0.36);
+
+      // Doğu iç duvarı (Güney bölümü)
+      addWall(-0.07, 0.29, -4.15, 0.26, 0.58, 4.7);
+      addCornerWedge(-0.2, -1.8, -1, 1, 0.75, 0.29, 0.58);
+
+      // 2. Hedef Kupa Koridoru (Batıdan Doğuya)
+      addFloorWithCupHole(1.8, 0, 0.0, 4.4, 0.2, 3.6, 3.2, 0.0, 0.21);
+      addWall(4.13, 0.29, 0.0, 0.26, 0.58, 4.12);
+      addWall(1.8, 0.29, 1.93, 4.4, 0.58, 0.26);
+      addWall(1.8, 0.29, -1.93, 4.4, 0.58, 0.26);
+      addCornerWedge(4.0, 1.8, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(4.0, -1.8, -1, 1, 0.75, 0.29, 0.58);
+
+      // DİKKAT: Başlangıç koridorunun tam kuzeyi (X: -3.8 ile -0.4, Z: 1.5) DUVARSIZ UÇURUMDUR!
+      // Oyuncu bu köşeye 45 derece bir duvar çizerek topu doğrudan kupaya sektirmelidir!
+    }
+
+    function buildDrawHole2() {
+      // 2. V-Sektirme (Engel Arkasındaki Kupaya Rebound)
+      addFloor(-1.8, 0, -2.0, 3.4, 0.2, 8.0);
+      addFloorWithCupHole(1.8, 0, -2.0, 3.4, 0.2, 8.0, 1.8, -4.5, 0.21);
+      addFloor(0, 0, 3.8, 7.0, 0.2, 3.6);
+
+      addWall(-3.63, 0.29, -0.2, 0.26, 0.58, 11.6);
+      addWall(3.63, 0.29, -0.2, 0.26, 0.58, 11.6);
+      addWall(0, 0.29, -6.13, 7.0, 0.58, 0.26);
+      addCornerWedge(-3.5, -6.0, 1, 1, 0.75, 0.29, 0.58);
+      addCornerWedge(3.5, -6.0, -1, 1, 0.75, 0.29, 0.58);
+
+      // İki şeridi ayıran merkez ahşap kalas bariyer
+      addWall(0, 0.29, -2.0, 0.36, 0.58, 7.6);
+
+      // DİKKAT: Rebound meydanının kuzeyi (Z = 5.6) DUVARSIZDIR!
+      // Oyuncu rebound meydanına açılı bir bant kurarak sol şeritten gelen topu sağ şeritteki kupaya yansıtmalıdır!
+    }
+
+    function buildDrawHole3() {
+      // 3. Uçurum Köprüsü (Boşluk Üzerinden Sektirme)
+      addFloor(-1.8, 0, -4.0, 3.8, 0.2, 6.0);
+      addWall(-3.83, 0.29, -4.0, 0.26, 0.58, 6.0);
+      addWall(-1.8, 0.29, -7.13, 3.8, 0.58, 0.26);
+      addCornerWedge(-3.7, -7.0, 1, 1, 0.75, 0.29, 0.58);
+      addCornerWedge(-0.1, -1.0, -1, 1, 0.75, 0.29, 0.58);
+
+      // Dar Bağlantı Köprüsü
+      addFloor(1.5, 0, 0.0, 2.8, 0.2, 2.6);
+      addWall(3.03, 0.29, 0.0, 0.26, 0.58, 2.6);
+
+      // Kuzey Yeşil Platform
+      addFloorWithCupHole(0.5, 0, 4.2, 5.2, 0.2, 6.0, 0.5, 5.6, 0.21);
+      addWall(3.23, 0.29, 4.2, 0.26, 0.58, 6.0);
+      addWall(0.5, 0.29, 7.33, 5.2, 0.58, 0.26);
+      addWall(-2.23, 0.29, 4.2, 0.26, 0.58, 6.0);
+      addCornerWedge(3.1, 7.2, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(-2.1, 7.2, 1, -1, 0.75, 0.29, 0.58);
+
+      // Yeşillik girişindeki kum engeli
+      addSand(0.5, 0.10, 2.6, 1.8, 1.2);
+
+      // DİKKAT: Güney Adanın doğrudan kuzeyi (X in [-3.7, 0.1], Z in [-1.0, 1.2]) DİPSİZ UÇURUMDUR!
+      // Oyuncu bu boşluğa bir köprü/bant duvarı çizerek topu uçurumdan koruyup sağ köprüye sektirmelidir!
+    }
+
+    function buildDrawHole4() {
+      // 4. Çifte Bant Ustası (Z-Rotası - 2 Duvar Çizme Hakkı!)
+      addFloor(-2.6, 0, -3.5, 3.2, 0.2, 7.0);
+      addWall(-4.33, 0.29, -3.5, 0.26, 0.58, 7.0);
+      addWall(-2.6, 0.29, -7.13, 3.2, 0.58, 0.26);
+      addCornerWedge(-4.2, -7.0, 1, 1, 0.75, 0.29, 0.58);
+
+      // Orta Yatay Geçiş Şeridi
+      addFloor(0.0, 0, 0.0, 8.4, 0.2, 3.2);
+
+      // Kuzey-Doğu Kupa Şeridi
+      addFloorWithCupHole(2.6, 0, 3.5, 3.2, 0.2, 7.0, 2.6, 5.5, 0.21);
+      addWall(4.33, 0.29, 3.5, 0.26, 0.58, 7.0);
+      addWall(2.6, 0.29, 7.13, 3.2, 0.58, 0.26);
+      addCornerWedge(4.2, 7.0, -1, -1, 0.75, 0.29, 0.58);
+
+      // İç Bölücü Duvarlar
+      addWall(-0.05, 0.29, -1.73, 2.1, 0.58, 0.26);
+      addWall(-0.87, 0.29, -4.35, 0.26, 0.58, 5.3);
+      addCornerWedge(-1.0, -7.0, -1, 1, 0.75, 0.29, 0.58);
+
+      addWall(0.05, 0.29, 1.73, 2.1, 0.58, 0.26);
+      addWall(0.87, 0.29, 4.35, 0.26, 0.58, 5.3);
+      addCornerWedge(1.0, 7.0, 1, -1, 0.75, 0.29, 0.58);
+
+      // DİKKAT:
+      // Köşe 1 (Kuzey-Batı Z=1.6) ve Köşe 2 (Güney-Doğu Z=-1.6) AÇIK UÇURUMDUR!
+      // 2 duvar çizerek topu Z şeklinde iki kez sektirip kupaya ulaştırın!
+    }
+
+    function buildDrawHole5() {
+      // 5. Zirve Labirenti & Turbo Bank (2 Duvar Hakkı + Hızlandırıcı + Dönen Engel!)
+      addFloor(0, 0, -5.8, 4.4, 0.2, 4.4);
+      addWall(0, 0.29, -8.13, 4.4, 0.58, 0.26);
+      addWall(-2.33, 0.29, -5.8, 0.26, 0.58, 4.4);
+      addWall(2.33, 0.29, -5.8, 0.26, 0.58, 4.4);
+      addCornerWedge(-2.2, -8.0, 1, 1, 0.75, 0.29, 0.58);
+      addCornerWedge(2.2, -8.0, -1, 1, 0.75, 0.29, 0.58);
+
+      // Hızlandırıcı ve Kum Koridoru
+      addFloor(0, 0, -1.4, 4.4, 0.2, 4.4);
+      addBooster(0, 0.10, -1.4, 1.4, 2.8, 22);
+      addSand(-1.5, 0.10, -1.4, 0.9, 2.8);
+      addSand(1.5, 0.10, -1.4, 0.9, 2.8);
+      addWall(-2.33, 0.29, -1.4, 0.26, 0.58, 4.4);
+      addWall(2.33, 0.29, -1.4, 0.26, 0.58, 4.4);
+
+      // Kuzey Rebound Platformu (Booster çıkışı)
+      addFloor(0, 0, 2.8, 4.4, 0.2, 4.0);
+      addWall(-2.33, 0.29, 2.8, 0.26, 0.58, 4.0);
+      // DİKKAT: Kuzey ucu (Z=4.8) DUVARSIZDIR! Booster'dan fırlayan topu yakalamak için duvar çizilmeli!
+
+      // Sağ Kupa Koridoru
+      addFloorWithCupHole(3.6, 0, 2.8, 3.2, 0.2, 6.0, 3.6, 5.0, 0.21);
+      addWall(5.33, 0.29, 2.8, 0.26, 0.58, 6.0);
+      addWall(3.6, 0.29, 5.93, 3.2, 0.58, 0.26);
+      addWall(3.6, 0.29, -0.33, 3.2, 0.58, 0.26);
+      addCornerWedge(5.2, 5.8, -1, -1, 0.75, 0.29, 0.58);
+      addCornerWedge(5.2, -0.2, -1, 1, 0.75, 0.29, 0.58);
+
+      // Kupa yolunu savunan dinamik ahşap rotor kirişi
+      addRotor(3.6, 0.10, 2.4);
+    }
+
+    const drawLevels = [
+      { id: 1, name: "1. İlk Bant", par: 2, maxWalls: 1, spawn: new THREE.Vector3(-2.0, 0.22, -5.0), cup: new THREE.Vector3(3.2, 0.1, 0.0), build: buildDrawHole1 },
+      { id: 2, name: "2. V-Sektirme", par: 2, maxWalls: 1, spawn: new THREE.Vector3(-1.8, 0.22, -4.5), cup: new THREE.Vector3(1.8, 0.1, -4.5), build: buildDrawHole2 },
+      { id: 3, name: "3. Uçurum Köprüsü", par: 3, maxWalls: 1, spawn: new THREE.Vector3(-1.8, 0.22, -5.5), cup: new THREE.Vector3(0.5, 0.1, 5.6), build: buildDrawHole3 },
+      { id: 4, name: "4. Çifte Bant 2x", par: 3, maxWalls: 2, spawn: new THREE.Vector3(-2.6, 0.22, -5.5), cup: new THREE.Vector3(2.6, 0.1, 5.5), build: buildDrawHole4 },
+      { id: 5, name: "5. Zirve & Turbo", par: 3, maxWalls: 2, spawn: new THREE.Vector3(0, 0.22, -6.8), cup: new THREE.Vector3(3.6, 0.1, 5.0), build: buildDrawHole5 }
+    ];
+    window.drawLevels = drawLevels;
+    window.loadDrawHole = loadDrawHole;
+    Object.defineProperty(window, 'drawnWalls', { get: () => drawnWalls });
+    Object.defineProperty(window, 'maxDrawnWalls', { get: () => maxDrawnWalls });
+
+    function loadDrawHole(idx) {
+      if (idx < 0 || idx >= drawLevels.length) idx = 0;
+      currentDrawHole = idx;
+
       while(courseGroup.children.length > 0) courseGroup.remove(courseGroup.children[0]);
       colliders = []; cornerWedges = []; treeColliders = []; woodLogs = [];
       speedBoosters = []; sandTraps = []; bumpers = []; rotatingBars = [];
       icePatches = []; jumpRamps = []; floorMeshes = [];
       targetSwitches = []; cupShieldGate = null; isCupLocked = false;
+      sparkParticles = []; shockwaveRings = []; lightningArcs = [];
       drawnWalls = []; isDrawingWall = false;
       if (drawPreviewMesh) drawPreviewMesh.visible = false;
       portalPairs = [];
 
-      holeCupPos.set(3.8, 0.1, 1.0);
-      ballPos.set(-2.2, 0.22, -5.5);
-      lastSafePos.copy(ballPos);
+      const data = drawLevels[idx];
+      maxDrawnWalls = data.maxWalls || 1;
+      holeCupPos.copy(data.cup);
+      ballPos.copy(data.spawn);
+      lastSafePos.copy(data.spawn);
       ballVel.set(0, 0, 0);
       isMoving = false; isInHole = false; isSinking = false; isAirborne = false;
       sinkFallVel = 0; strokes = 0;
@@ -3290,49 +3510,50 @@
       ballMesh.rotation.set(0, 0, 0);
       ballMesh.visible = true;
 
+      // Update UI tabs
       document.querySelectorAll('.voodoo-tab').forEach(t => t.classList.remove('active'));
       const activeTabDraw = document.getElementById('tab-draw');
       if (activeTabDraw) activeTabDraw.classList.add('active');
-      const tutHandDraw = document.getElementById('tutorial-hand');
-      if (tutHandDraw) tutHandDraw.style.display = 'none';
-      const drawPanelDraw = document.getElementById('draw-wall-panel');
-      if (drawPanelDraw) drawPanelDraw.style.display = 'flex';
+
+      const gateSubBar = document.getElementById('gate-sub-bar');
+      if (gateSubBar) gateSubBar.style.display = 'none';
+
+      const drawSubBar = document.getElementById('draw-sub-bar');
+      if (drawSubBar) {
+        drawSubBar.style.display = 'flex';
+        document.querySelectorAll('.draw-sub-tab').forEach(t => t.classList.remove('active'));
+        const activeSubTab = document.getElementById(`draw-tab-${idx}`);
+        if (activeSubTab) activeSubTab.classList.add('active');
+      }
+
+      const drawPanel = document.getElementById('draw-wall-panel');
+      if (drawPanel) drawPanel.style.display = 'flex';
+
+      const tutHand = document.getElementById('tutorial-hand');
+      if (tutHand) tutHand.style.display = 'none';
+
       updateHUD();
       document.getElementById('gameover-modal').style.display = 'none';
       document.getElementById('modal').style.display = 'none';
 
-      buildShowcaseDrawCourse();
+      data.build();
       buildCupAndFlag(holeCupPos);
       scene.updateMatrixWorld(true);
 
-      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, -5.5) ?? 0.0;
+      const initGroundY = getGroundHeight(ballPos.x, ballPos.z, data.spawn.y - ballRadius) ?? 0.0;
       lastGroundY = initGroundY;
       ballPos.y = initGroundY + ballRadius;
       lastSafePos.copy(ballPos);
 
       camYaw = 0;
-      camPitch = 0.50;
+      camPitch = 0.48;
       setDrawTool('draw');
       updateDrawUI();
-      showVoodooToast("✏️ Boşluğa Çizgi Çek, Kendi Duvarını Kur!", 4000);
+      showVoodooToast(`✏️ Bölüm ${idx + 1}: ${data.name.replace(/^\d+\.\s*/, '')} (${maxDrawnWalls} Bant)`, 3500);
     }
 
-    function buildShowcaseDrawCourse() {
-      // L şeklinde parkur
-      addFloor(-2.2, 0, -3.2, 3.4, 0.2, 7.6);
-      addFloorWithCupHole(1.4, 0, 1.0, 7.2, 0.2, 3.4, 3.8, 1.0, 0.21);
-
-      // Duvarlar (Kritik: Kuzey-Batı köşesinde DUVAR YOKTUR, uçurumdur!)
-      addWall(-4.02, 0.29, -3.8, 0.26, 0.58, 6.8);
-      addWall(-2.2, 0.18, -7.12, 3.4, 0.36, 0.26);
-      addWall(-0.38, 0.29, -3.4, 0.26, 0.58, 6.0);
-      addWall(5.12, 0.29, 1.0, 0.26, 0.58, 3.6);
-      addWall(2.32, 0.29, -0.82, 5.8, 0.58, 0.26);
-      addWall(3.2, 0.29, 2.82, 4.0, 0.58, 0.26);
-
-      addCornerWedge(-3.89, -6.99, 1, 1, 0.75, 0.18, 0.36);
-      addCornerWedge(4.99, 2.69, -1, -1, 0.75, 0.29, 0.58);
-      addCornerWedge(4.99, -0.69, -1, 1, 0.75, 0.29, 0.58);
+    function loadShowcaseDraw() {
+      loadDrawHole(currentDrawHole);
     }
 
     // Showcase 3: Quantum Portal
@@ -4118,13 +4339,28 @@
       return group;
     }
 
-    function addWoodLog(x, y, z, length = 1.8, width = 0.34, angle = 0) {
+    function addWoodLog(x, y, z, length = 1.8, width = 0.34, angle = 0, isDrawn = false) {
       // Köşeli kereste boyutları (Genişlik: 0.34m, Yükseklik: 0.30m)
       const beamW = (width !== undefined && width > 0.22) ? width : (width ? width * 2.0 : 0.34);
       const beamH = 0.30;
       const mesh = createWoodLogMesh(length, beamW, beamH);
       mesh.position.set(x, y + beamH * 0.5, z);
       mesh.rotation.y = angle;
+
+      if (isDrawn) {
+        // Çizilen duvara özel şık altın/amber neon üst şerit
+        const trimGeo = new THREE.BoxGeometry(length * 0.94, 0.03, beamW * 0.45);
+        const trimMat = new THREE.MeshStandardMaterial({
+          color: 0xffd632,
+          emissive: 0xffa500,
+          emissiveIntensity: 1.2,
+          roughness: 0.2
+        });
+        const trimMesh = new THREE.Mesh(trimGeo, trimMat);
+        trimMesh.position.set(0, beamH * 0.5 + 0.015, 0);
+        mesh.add(trimMesh);
+      }
+
       courseGroup.add(mesh);
 
       woodLogs.push({
@@ -4140,7 +4376,8 @@
         angle: angle,
         cosA: Math.cos(angle),
         sinA: Math.sin(angle),
-        mesh: mesh
+        mesh: mesh,
+        isDrawn: isDrawn
       });
       return mesh;
     }
@@ -4498,7 +4735,10 @@
       if (tutHandEl) tutHandEl.style.display = 'none';
 
       // 2. Mekanik: Duvar Çizme Modu Aktifse
-      if (currentVoodooMode === 'draw' && drawToolActive && drawnWalls.length < maxDrawnWalls) {
+      if (currentVoodooMode === 'draw' && drawToolActive) {
+        if (drawnWalls.length >= maxDrawnWalls) {
+          clearDrawnWalls();
+        }
         const p = getFloorIntersection(clientX, clientY);
         if (p) {
           interactionMode = 'DRAW_WALL';
@@ -4634,19 +4874,25 @@
           const dx = drawEnd3D.x - drawStart3D.x;
           const dz = drawEnd3D.z - drawStart3D.z;
           const len = Math.hypot(dx, dz);
-          if (len >= 0.40) {
+          if (len >= 0.20) {
             const midX = (drawStart3D.x + drawEnd3D.x) * 0.5;
             const midZ = (drawStart3D.z + drawEnd3D.z) * 0.5;
             const angle = Math.atan2(-dz, dx);
-            const wallLen = Math.max(0.6, Math.min(len, 4.5));
-            const wallMesh = addWoodLog(midX, 0.10, midZ, wallLen, 0.34, angle);
+            const wallLen = Math.max(0.8, Math.min(len, 4.8));
+            const wallMesh = addWoodLog(midX, 0.10, midZ, wallLen, 0.34, angle, true);
             drawnWalls.push(wallMesh);
+            createSparkBurst(midX, 0.25, midZ, 0xffd632);
             playWallSpawn();
             triggerHaptic('medium');
-            showVoodooToast("🎯 Duvar Kuruldu! Şimdi Topu Sektir!");
-            setDrawTool('shoot');
+
+            if (drawnWalls.length >= maxDrawnWalls) {
+              showVoodooToast("🎯 Duvar(lar) Kuruldu! Şimdi Topu Sektir!");
+              setDrawTool('shoot');
+            } else {
+              showVoodooToast(`✏️ 1. Duvar Kuruldu! (${drawnWalls.length}/${maxDrawnWalls}) - İkinciyi Çiz!`);
+            }
             updateDrawUI();
-          } else if (len > 0.08) {
+          } else if (len > 0.05) {
             showVoodooToast("⚠️ Biraz daha uzun çizgi çek!");
           }
         }
@@ -5071,9 +5317,10 @@
         document.getElementById('hole-name').innerText = gh.name.replace(/^\d+\.\s*/, '');
         document.getElementById('par-badge').innerText = `PAR ${gh.par}`;
       } else if (currentVoodooMode === 'draw') {
-        document.getElementById('hole-num').innerText = "2";
-        document.getElementById('hole-name').innerText = "Duvar Çiz";
-        document.getElementById('par-badge').innerText = "PAR 2";
+        const dh = drawLevels[currentDrawHole];
+        document.getElementById('hole-num').innerText = currentDrawHole + 1;
+        document.getElementById('hole-name').innerText = dh.name.replace(/^\d+\.\s*/, '');
+        document.getElementById('par-badge').innerText = `PAR ${dh.par}`;
       } else if (currentVoodooMode === 'portal') {
         document.getElementById('hole-num').innerText = "3";
         document.getElementById('hole-name').innerText = "Portal & Warp";
@@ -5167,6 +5414,10 @@
             if (ballVel.length() > 3.0 && !isAirborne) {
               ballVel.y = Math.min(ballVel.length() * 0.14, 1.8);
               isAirborne = true;
+            }
+            if (log.isDrawn) {
+              createSparkBurst(ballPos.x, ballPos.y, ballPos.z, 0xffd632);
+              triggerHaptic('light');
             }
             playBounce();
           }
@@ -5863,6 +6114,8 @@
         par = holes[currentHole].par;
       } else if (currentVoodooMode === 'gate') {
         par = gateLevels[currentGateHole].par;
+      } else if (currentVoodooMode === 'draw') {
+        par = drawLevels[currentDrawHole].par;
       }
       const diff = strokes - par;
 
@@ -5891,8 +6144,12 @@
           document.getElementById('next-btn').innerText = "ŞALTER ÜNİTESİ BİTTİ! TEBRİKLER 🏆";
         }
       } else if (currentVoodooMode === 'draw') {
-        score.innerText = `${strokes} Vuruşta Tamamlandı! Kendi Duvarını Çizdin & Başardın!`;
-        document.getElementById('next-btn').innerText = "SONRAKİ MEKANİK: PORTAL 🌀";
+        score.innerText = `${strokes} Vuruşta Tamamlandı (Par: ${par})! Kendi Duvarını Çizdin & Başardın! ✏️`;
+        if (currentDrawHole < drawLevels.length - 1) {
+          document.getElementById('next-btn').innerText = `SONRAKİ BÖLÜM (${currentDrawHole + 2}/${drawLevels.length}) ➡️`;
+        } else {
+          document.getElementById('next-btn').innerText = "DUVAR ÇİZME ÜNİTESİ BİTTİ! TEBRİKLER 🏆";
+        }
       } else if (currentVoodooMode === 'portal') {
         score.innerText = `${strokes} Vuruşta Tamamlandı! Kuantum Sıçraması Başarılı!`;
         document.getElementById('next-btn').innerText = "KLASİK MODA DÖN ⛳";
@@ -5915,7 +6172,14 @@
           showVoodooToast("🏆 Şalter Ünitesini Tamamladın! 1. Bölümden Tekrar Başlandı.", 4000);
         }
       } else if (currentVoodooMode === 'draw') {
-        switchVoodooMode('portal');
+        if (currentDrawHole < drawLevels.length - 1) {
+          currentDrawHole++;
+          loadDrawHole(currentDrawHole);
+        } else {
+          currentDrawHole = 0;
+          loadDrawHole(currentDrawHole);
+          showVoodooToast("🏆 Duvar Çizme Ünitesini Tamamladın! 1. Bölümden Tekrar Başlandı.", 4000);
+        }
       } else if (currentVoodooMode === 'portal') {
         switchVoodooMode('classic');
       }
@@ -6134,16 +6398,23 @@
           if (isCupLocked) throw new Error("Cup should be unlocked after switch hit");
           window.testResults.push("TEST 1 (Gate & Switch 5 Levels): PASSED");
 
-          // Test 2: Draw-a-Bant
+          // Test 2: Draw-a-Bant (5 Levels Verification)
           switchVoodooMode('draw');
+          if (drawLevels.length !== 5) throw new Error("Draw levels count not 5");
+          for (let d = 0; d < 5; d++) {
+            loadDrawHole(d);
+            if (getGroundHeight(ballPos.x, ballPos.z) === null) throw new Error(`Draw hole ${d+1} ball spawn not on floor`);
+            if (d >= 3 && maxDrawnWalls !== 2) throw new Error(`Draw hole ${d+1} should allow 2 walls`);
+          }
           if (document.getElementById('draw-wall-panel').style.display !== 'flex') throw new Error("Draw panel not visible");
+          loadDrawHole(0);
           setDrawTool('draw');
-          const wallMesh = addWoodLog(0, 0.10, 0, 2.5, 0.34, 0.78);
+          const wallMesh = addWoodLog(0, 0.10, 0, 2.5, 0.34, 0.78, true);
           drawnWalls.push(wallMesh);
           updateDrawUI();
           if (drawnWalls.length !== 1) throw new Error("Drawn wall not added");
-          if (!woodLogs.some(l => l.mesh === wallMesh)) throw new Error("Drawn wall not in woodLogs");
-          window.testResults.push("TEST 2 (Draw-a-Bant): PASSED");
+          if (!woodLogs.some(l => l.mesh === wallMesh && l.isDrawn)) throw new Error("Drawn wall not in woodLogs with isDrawn flag");
+          window.testResults.push("TEST 2 (Draw-a-Bant 5 Levels): PASSED");
 
           // Test 3: Quantum Portal
           switchVoodooMode('portal');
